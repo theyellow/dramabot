@@ -1,2 +1,2 @@
 # dramabot
-Bot to tell things in the community.
+Bot gives feedbacks about playwriting.
