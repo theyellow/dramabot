@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS catalog;
+
+CREATE TABLE catalog (
+  id INT AUTO_INCREMENT  PRIMARY KEY,
+  entry_type VARCHAR(60) NOT NULL,
+  entry_text VARCHAR(1700) DEFAULT NULL,
+  entry_author VARCHAR(240) DEFAULT NULL
+);

@@ -1,0 +1,15 @@
+
+# slack integration
+
+
+slackApi=https://slack.com/api
+
+# fill with your values from slack
+slack.botToken=xoxb-1234567890-1012345678901-...
+slack.signingSecret=signing-secret
+slack.clientSecret=clientSecret
+slack.clientId=161243257651.18242453467560
+slack.socketToken=xapp-1-A0TZ93FG-....
+
+# replace the below url with your slack webhook url
+slackIncomingWebhookUrl=https://hooks.slack.com/services/Z08FD2AEX1/B01FJ7H...

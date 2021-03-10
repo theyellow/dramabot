@@ -2,7 +2,7 @@
 *.class
 
 # Log file
-*.log
+*.log*
 
 # BlueJ files
 *.ctxt
@@ -19,5 +19,21 @@
 *.tar.gz
 *.rar
 
+# catalog.csv get's populated by magic (from ./config.csv) or direct import via bot
+config/catalog.csv
+/catalog.csv
+
+# slack-settings are excluded for security-reasons
+config/slack-settings.properties
+
+# we don'need any *.doc(x)
+*.doc*
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+.DS_Store
+.classpath
+.project
+.settings
+target
