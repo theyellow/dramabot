@@ -17,6 +17,12 @@
 	<name>Dramabot for Matearium</name>
 	<description>A Slack/Facebook drama for playwriting bot using JBot.</description>
 
+	<properties>
+		<sonar.projectKey>dramabot</sonar.projectKey>
+		<sonar.organization>theyellow-github</sonar.organization>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+	</properties>
+
 	<dependencies>
 		<!-- <dependency> -->
 		<!-- <groupId>me.ramswaroop.jbot</groupId> -->
