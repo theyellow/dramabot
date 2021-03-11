@@ -177,7 +177,7 @@ public class SlackApp {
 			}
 		} else if (null != payloadText && payloadText.contains("ador")) {
 			resultBuilder.append("Anch'io!");
-		} else if (null != payloadText && payloadText.contains(" amo") || payloadText.startsWith("amo")) {
+		} else if (null != payloadText && (payloadText.contains(" amo") || payloadText.startsWith("amo"))) {
 			resultBuilder.append("Anch'io!");
 		} else {
 			// if not found don't post in channel but private
