@@ -1,61 +1,56 @@
 package dramabot.hibernate.bootstrap.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Table
 public class CatalogEntry {
 
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
-	
-	@Column(length = 1800)
-	private String entryText;
 
-	@Column(length = 140)
+    @Column(length = 1800)
+    private String entryText;
+
+    @Column(length = 140)
     private String entryAuthor;
 
-	@Column(length = 60)
+    @Column(length = 60)
     private String entryType;
 
-	public CatalogEntry(String entryText, String entryAuthor, String entryType) {
-		super();
-		this.entryText = entryText;
-		this.entryAuthor = entryAuthor;
-		this.entryType = entryType;
-	}
-	
-	public CatalogEntry() {
-	}
+    public CatalogEntry(String entryText, String entryAuthor, String entryType) {
+        super();
+        this.entryText = entryText;
+        this.entryAuthor = entryAuthor;
+        this.entryType = entryType;
+    }
 
-	public String getEntryText() {
-		return entryText;
-	}
+    public CatalogEntry() {
+    }
 
-	public void setEntryText(String entryText) {
-		this.entryText = entryText;
-	}
+    public String getEntryText() {
+        return entryText;
+    }
 
-	public String getEntryAuthor() {
-		return entryAuthor;
-	}
+    public void setEntryText(String entryText) {
+        this.entryText = entryText;
+    }
 
-	public void setEntryAuthor(String entryAuthor) {
-		this.entryAuthor = entryAuthor;
-	}
+    public String getEntryAuthor() {
+        return entryAuthor;
+    }
 
-	public String getEntryType() {
-		return entryType;
-	}
+    public void setEntryAuthor(String entryAuthor) {
+        this.entryAuthor = entryAuthor;
+    }
 
-	public void setEntryType(String entryType) {
-		this.entryType = entryType;
-	}
-    
+    public String getEntryType() {
+        return entryType;
+    }
+
+    public void setEntryType(String entryType) {
+        this.entryType = entryType;
+    }
+
 }

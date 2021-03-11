@@ -3,17 +3,22 @@ package dramabot.service.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CsvTransfer <T extends CsvBean> {
+public class CsvTransfer<T extends CsvBean> {
 
-	private List<String[]> csvStringList;
+    private List<String[]> csvStringList;
 
     private List<T> csvList;
 
-    public CsvTransfer() {}
+    public CsvTransfer() {
+    }
 
     public List<String[]> getCsvStringList() {
         if (csvStringList != null) return csvStringList;
-        return new ArrayList<String[]>();
+        return new ArrayList<>();
+    }
+
+    public void setCsvStringList(List<String[]> csvStringList) {
+        this.csvStringList = csvStringList;
     }
 
     public void addLine(String[] line) {
@@ -21,16 +26,12 @@ public class CsvTransfer <T extends CsvBean> {
         this.csvStringList.add(line);
     }
 
-    public void setCsvStringList(List<String[]> csvStringList) {
-        this.csvStringList = csvStringList;
+    public List<T> getCsvList() {
+        if (csvList != null) return csvList;
+        return new ArrayList<>();
     }
 
     public void setCsvList(List<T> csvList) {
         this.csvList = csvList;
-    }
-
-    public List<T> getCsvList() {
-        if (csvList != null) return csvList;
-        return new ArrayList<>();
     }
 }
