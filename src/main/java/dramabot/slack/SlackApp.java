@@ -41,7 +41,7 @@ import dramabot.service.CatalogManager;
 import dramabot.service.model.CatalogEntryBean;
 
 @Configuration
-@PropertySource({"file:config/slack-settings.properties"})
+@PropertySource({ "file:config/slack-settings.properties" })
 public class SlackApp {
 
 	private static Logger logger = LoggerFactory.getLogger(SlackApp.class);
@@ -102,7 +102,8 @@ public class SlackApp {
 					}
 				}
 			} catch (Exception e) {
-				logger.error(e.getMessage());;
+				logger.error(e.getMessage());
+				;
 			}
 			String payloadText = event.getText();
 			String username = event.getUsername();
@@ -220,24 +221,17 @@ public class SlackApp {
 			List<CatalogEntryBean> criticaBeans = new ArrayList<>();
 			List<CatalogEntryBean> feedbackBeans = new ArrayList<>();
 			List<CatalogEntryBean> everythingElseBeans = new ArrayList<>();
-			try {
-				List<CatalogEntryBean> allBeans = catalogManager.getBeansFromDatabase();
-				for (CatalogEntryBean catalogEntryBean : allBeans) {
-					if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals("e se")) {
-						eseBeans.add(catalogEntryBean);
-					} else if (catalogEntryBean.getType() != null
-							&& catalogEntryBean.getType().trim().equals("critica")) {
-						criticaBeans.add(catalogEntryBean);
-					} else if (catalogEntryBean.getType() != null
-							&& catalogEntryBean.getType().trim().equals("feedback")) {
-						feedbackBeans.add(catalogEntryBean);
-					} else {
-						everythingElseBeans.add(catalogEntryBean);
-					}
+			List<CatalogEntryBean> allBeans = catalogManager.getBeansFromDatabase();
+			for (CatalogEntryBean catalogEntryBean : allBeans) {
+				if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals("e se")) {
+					eseBeans.add(catalogEntryBean);
+				} else if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals("critica")) {
+					criticaBeans.add(catalogEntryBean);
+				} else if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals("feedback")) {
+					feedbackBeans.add(catalogEntryBean);
+				} else {
+					everythingElseBeans.add(catalogEntryBean);
 				}
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 			SlashCommandPayload payload = req.getPayload();
 			String userId = payload.getUserId();
@@ -249,6 +243,7 @@ public class SlackApp {
 			String responseUrl = payload.getResponseUrl();
 
 			StringBuilder resultBuilder = new StringBuilder();
+			
 			// default response in channel
 			String responseType = "in_channel";
 
