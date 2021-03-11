@@ -130,8 +130,8 @@ public class SlackApp {
 	private static String appendPayload(List<CatalogEntryBean> eseBeans, List<CatalogEntryBean> criticaBeans,
 			List<CatalogEntryBean> feedbackBeans, List<CatalogEntryBean> everythingElseBeans, String payloadText,
 			StringBuilder resultBuilder, String responseType) {
-		if (null != payloadText && payloadText.contains("feedback") || payloadText.contains("vorrei")
-				|| payloadText.contains(" pens") || payloadText.startsWith("pens")) {
+		if (null != payloadText && (payloadText.contains("feedback") || payloadText.contains("vorrei")
+				|| payloadText.contains(" pens") || payloadText.startsWith("pens"))) {
 			try {
 				int size = feedbackBeans.size();
 				if (size > 0) {
