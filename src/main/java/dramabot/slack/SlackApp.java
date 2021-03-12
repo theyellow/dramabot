@@ -15,7 +15,6 @@ import dramabot.service.CatalogManager;
 import dramabot.service.model.CatalogEntryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,6 +35,9 @@ public class SlackApp {
 
     private static final Logger logger = LoggerFactory.getLogger(SlackApp.class);
 
+    public static final String IN_CHANNEL = "in_channel";
+    public static final String ERROR_TEXT = "Orpo, ce vustu? Hai bisogno di un feedback? O vuoi che ti faccia una bella domanda critica? Qualsiasi cosa ti crucci, chiedimi!";
+
     @Value(value = "${slack.botToken}")
     private String botToken;
 
@@ -50,9 +52,6 @@ public class SlackApp {
 
     @Value(value = "${slack.clientId}")
     private String clientId;
-
-    @Autowired
-    private CatalogManager catalogManager;
 
     private static SlashCommandHandler dramabotCommandHandler(CatalogManager catalogManager) {
         return (req, ctx) -> {
@@ -69,11 +68,11 @@ public class SlackApp {
             String command = payload.getCommand();
             String payloadText = payload.getText();
             String responseUrl = payload.getResponseUrl();
-            
+
             StringBuilder resultBuilder = new StringBuilder();
 
             // default response in channel
-            String responseType = "in_channel";
+            String responseType = IN_CHANNEL;
 
             logger.debug("In channel {} a command '{}' " + "was sent by {}. The text was '{}', as "
                             + "response url '{}' was given. UserId: {} ChannelId:{}",
@@ -97,10 +96,10 @@ public class SlackApp {
                             .type("home")
                             .blocks(asBlocks(
                                     section(sectionBuilder ->
-                                                    sectionBuilder
-                                                            .text(markdownText(markdownTextBuilder ->
-                                                                    markdownTextBuilder
-                                                                            .text(":wave: Ciao, benvenut* a casa del* dramabot! (Last updated: " + now + ")")))),
+                                            sectionBuilder
+                                                    .text(markdownText(markdownTextBuilder ->
+                                                            markdownTextBuilder
+                                                                    .text(":wave: Ciao, benvenut* a casa del* dramabot! (Last updated: " + now + ")")))),
                                     image(imageBuilder ->
                                             imageBuilder.imageUrl("https://www.matearium.it/wp-content/uploads/2020/02/tondo_bianco.png")))));
 
@@ -123,60 +122,67 @@ public class SlackApp {
     private static String appendPayload(List<CatalogEntryBean> eseBeans, List<CatalogEntryBean> criticaBeans,
                                         List<CatalogEntryBean> feedbackBeans, List<CatalogEntryBean> everythingElseBeans, String payloadText,
                                         StringBuilder resultBuilder, String responseType) {
-        if (null != payloadText && (payloadText.contains("feedback") || payloadText.contains("vorrei")
-                || payloadText.contains(" pens") || payloadText.startsWith("pens"))) {
-            try {
-                int size = feedbackBeans.size();
-                if (size > 0) {
-                    int random = SecureRandom.getInstanceStrong().nextInt(size);
-                    resultBuilder.append(feedbackBeans.get(random).getText());
+        if (null != payloadText) {
+            if (payloadText.contains("feedback") || payloadText.contains("vorrei")
+                    || payloadText.contains(" pens") || payloadText.startsWith("pens")) {
+                try {
+                    int size = feedbackBeans.size();
+                    if (size > 0) {
+                        int random = SecureRandom.getInstanceStrong().nextInt(size);
+                        resultBuilder.append(feedbackBeans.get(random).getText());
+                    }
+                } catch (Exception e) {
+                    logger.error("Error getting 'feedback' bean.");
                 }
-            } catch (Exception e) {
-                logger.error("Error getting 'feedback' bean.");
-            }
-        } else if (null != payloadText && (payloadText.contains("domanda") || payloadText.contains("critic")
-                || payloadText.contains(" devo ") || payloadText.contains(" devi ") || payloadText.startsWith("devo ")
-                || payloadText.startsWith("devi "))) {
-            try {
-                int size = criticaBeans.size();
-                if (size > 0) {
-                    int random = SecureRandom.getInstanceStrong().nextInt(size);
-                    resultBuilder.append(criticaBeans.get(random).getText());
+            } else if (payloadText.contains("domanda") || payloadText.contains("critic")
+                    || payloadText.contains(" devo ") || payloadText.contains(" devi ") || payloadText.startsWith("devo ")
+                    || payloadText.startsWith("devi ")) {
+                try {
+                    int size = criticaBeans.size();
+                    if (size > 0) {
+                        int random = SecureRandom.getInstanceStrong().nextInt(size);
+                        resultBuilder.append(criticaBeans.get(random).getText());
+                    }
+                } catch (Exception e) {
+                    logger.error("Error getting 'critical' bean.");
                 }
-            } catch (Exception e) {
-                logger.error("Error getting 'critical' bean.");
-            }
-        } else if (null != payloadText && (payloadText.contains("capisc") || payloadText.contains("dubbi"))) {
-            try {
-                int size = eseBeans.size();
-                if (size > 0) {
-                    int random = SecureRandom.getInstanceStrong().nextInt(size);
-                    resultBuilder.append(eseBeans.get(random).getText());
+            } else if (payloadText.contains("capisc") || payloadText.contains("dubbi")) {
+                try {
+                    int size = eseBeans.size();
+                    if (size > 0) {
+                        int random = SecureRandom.getInstanceStrong().nextInt(size);
+                        resultBuilder.append(eseBeans.get(random).getText());
+                    }
+                } catch (Exception e) {
+                    logger.error("Error getting 'e se' bean.");
                 }
-            } catch (Exception e) {
-                logger.error("Error getting 'e se' bean.");
-            }
-        } else if (null != payloadText && payloadText.contains("qualcosa")) {
-            try {
-                int size = everythingElseBeans.size();
-                if (size > 0) {
-                    int random = SecureRandom.getInstanceStrong().nextInt(size);
-                    resultBuilder.append(everythingElseBeans.get(random).getText());
-                } else {
-                    resultBuilder.append("Qualcosa!");
+            } else if (payloadText.contains("qualcosa")) {
+                try {
+                    int size = everythingElseBeans.size();
+                    if (size > 0) {
+                        int random = SecureRandom.getInstanceStrong().nextInt(size);
+                        resultBuilder.append(everythingElseBeans.get(random).getText());
+                    } else {
+                        resultBuilder.append("Qualcosa!");
+                    }
+                } catch (Exception e) {
+                    logger.error("Error getting 'everything else' bean.");
                 }
-            } catch (Exception e) {
-                logger.error("Error getting 'everything else' bean.");
+            } else if (payloadText.contains("ador")) {
+                resultBuilder.append("Anch'io!");
+            } else if (payloadText.contains(" amo") || payloadText.startsWith("amo")) {
+                resultBuilder.append("Anch'io!");
+            } else {
+                // if not found don't post in channel but private
+                responseType = "ephemeral";
+                resultBuilder.append(ERROR_TEXT);
             }
-        } else if (null != payloadText && payloadText.contains("ador")) {
-            resultBuilder.append("Anch'io!");
-        } else if (null != payloadText && (payloadText.contains(" amo") || payloadText.startsWith("amo"))) {
-            resultBuilder.append("Anch'io!");
         } else {
-            // if not found don't post in channel but private
+            // if null don't post in channel but private
             responseType = "ephemeral";
             resultBuilder.append(
-                    "Orpo, ce vustu? Hai bisogno di un feedback? O vuoi che ti faccia una bella domanda critica? Qualsiasi cosa ti crucci, chiedimi!");
+                    ERROR_TEXT);
+
         }
         return responseType;
     }
@@ -199,13 +205,13 @@ public class SlackApp {
     }
 
     @Bean
-    public App initSlackApp() {
+    public App initSlackApp(CatalogManager catalogManager) {
         AppConfig appConfig = AppConfig.builder().
-				/*clientId(clientId).
-				requestVerificationEnabled(false).*/
-				clientSecret(clientSecret).
-				signingSecret(signingSecret).
-        singleTeamBotToken(botToken).build();
+                /*clientId(clientId).
+                requestVerificationEnabled(false).*/
+                        clientSecret(clientSecret).
+                        signingSecret(signingSecret).
+                        singleTeamBotToken(botToken).build();
         App app = new App(appConfig);
         app.event(AppMentionEvent.class, mentionEventHandler(catalogManager));
         app.command("/dramabot", dramabotCommandHandler(catalogManager));
@@ -231,7 +237,7 @@ public class SlackApp {
             username = username == null ? "" : username;
             StringBuilder resultBuilder = new StringBuilder();
             // default response in channel
-            String responseType = "in_channel";
+            String responseType = IN_CHANNEL;
             responseType = appendPayload(eseBeans, criticaBeans, feedbackBeans, everythingElseBeans, payloadText,
                     resultBuilder, responseType);
             String iconEmoji = payloadText.contains(" amo") ? ":heart:" : null;
@@ -239,7 +245,7 @@ public class SlackApp {
             String text = resultBuilder.toString();
 //			if ("in_channel".equals(responseType)) {
 
-            if (!"in_channel".equals(responseType)) {
+            if (!IN_CHANNEL.equals(responseType)) {
                 logger.info("Normally a chatmessage would be posted personally, but in channels with @ - mentioning it's public");
             }
             ChatPostMessageRequest reqq = ChatPostMessageRequest.builder().text(text).channel(event.getChannel())

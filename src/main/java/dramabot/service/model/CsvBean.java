@@ -1,6 +1,6 @@
 package dramabot.service.model;
 
 
-public class CsvBean {
+public interface CsvBean {
 
 }

@@ -2,7 +2,7 @@ package dramabot.service.model;
 
 import com.opencsv.bean.CsvBindByName;
 
-public class CatalogEntryBean extends CsvBean {
+public class CatalogEntryBean implements CsvBean {
 
     @CsvBindByName(column = "text")
     private String text;

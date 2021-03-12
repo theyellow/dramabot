@@ -10,6 +10,7 @@ public class CsvTransfer<T extends CsvBean> {
     private List<T> csvList;
 
     public CsvTransfer() {
+        // empty object should exist
     }
 
     public List<String[]> getCsvStringList() {
