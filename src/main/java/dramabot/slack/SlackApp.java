@@ -13,7 +13,6 @@ import com.slack.api.model.event.AppMentionEvent;
 import com.slack.api.model.view.View;
 import dramabot.service.CatalogManager;
 import dramabot.service.model.CatalogEntryBean;
-import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
+import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,11 +56,11 @@ public class SlackApp {
 
     private static SlashCommandHandler dramabotCommandHandler(CatalogManager catalogManager) {
         return (req, ctx) -> {
-            List<CatalogEntryBean> eseBeans = new ArrayList<>();
-            List<CatalogEntryBean> criticaBeans = new ArrayList<>();
-            List<CatalogEntryBean> feedbackBeans = new ArrayList<>();
-            List<CatalogEntryBean> everythingElseBeans = new ArrayList<>();
-            fillBeansWithDatabaseContent(catalogManager, eseBeans, criticaBeans, feedbackBeans, everythingElseBeans);
+            List<CatalogEntryBean> eses = new ArrayList<>();
+            List<CatalogEntryBean> critics = new ArrayList<>();
+            List<CatalogEntryBean> feedbacks = new ArrayList<>();
+            List<CatalogEntryBean> everythingElses = new ArrayList<>();
+            fillBeansWithDatabaseContent(catalogManager, eses, critics, feedbacks, everythingElses);
             SlashCommandPayload payload = req.getPayload();
             String userId = payload.getUserId();
             String userName = payload.getUserName();
@@ -69,17 +69,16 @@ public class SlackApp {
             String command = payload.getCommand();
             String payloadText = payload.getText();
             String responseUrl = payload.getResponseUrl();
-
+            
             StringBuilder resultBuilder = new StringBuilder();
 
             // default response in channel
             String responseType = "in_channel";
 
-            logger.info(
-                    "In channel {} a command '{}' " + "was sent by {}. The text was '{}', as "
+            logger.debug("In channel {} a command '{}' " + "was sent by {}. The text was '{}', as "
                             + "response url '{}' was given. UserId: {} ChannelId:{}",
                     channelName, command, userName, payloadText, responseUrl, userId, channelId);
-            responseType = appendPayload(eseBeans, criticaBeans, feedbackBeans, everythingElseBeans, payloadText,
+            responseType = appendPayload(eses, critics, feedbacks, everythingElses, payloadText,
                     resultBuilder, responseType);
             String text = resultBuilder.toString();
             SlashCommandResponse response = SlashCommandResponse.builder().text(text).responseType(responseType)
@@ -88,15 +87,23 @@ public class SlackApp {
         };
     }
 
-    private static BoltEventHandler<AppHomeOpenedEvent> getHome() {
+    private BoltEventHandler<AppHomeOpenedEvent> getHome() {
         return (payload, ctx) -> {
+
             // Build a Home tab view
             ZonedDateTime now = ZonedDateTime.now();
-            View appHomeView = view(view -> view.type("home").blocks(asBlocks(
-                    section(section -> section.text(markdownText(
-                            mt -> mt.text(":wave: Ciao, benvenut* a casa del* dramabot! (Last updated: " + now + ")")))),
-                    image(img -> img
-                            .imageUrl("https://www.matearium.it/wp-content/uploads/2020/02/tondo_bianco.png")))));
+            View appHomeView = view(viewBuilder ->
+                    viewBuilder
+                            .type("home")
+                            .blocks(asBlocks(
+                                    section(sectionBuilder ->
+                                                    sectionBuilder
+                                                            .text(markdownText(markdownTextBuilder ->
+                                                                    markdownTextBuilder
+                                                                            .text(":wave: Ciao, benvenut* a casa del* dramabot! (Last updated: " + now + ")")))),
+                                    image(imageBuilder ->
+                                            imageBuilder.imageUrl("https://www.matearium.it/wp-content/uploads/2020/02/tondo_bianco.png")))));
+
             // Update the App Home for the given user
             ViewsPublishResponse res = ctx.client().viewsPublish(
                     r -> r.userId(payload.getEvent().getUser()).hash(payload.getEvent().getView().getHash()) // To
@@ -121,7 +128,7 @@ public class SlackApp {
             try {
                 int size = feedbackBeans.size();
                 if (size > 0) {
-                    int random = RandomUtils.nextInt(0, size);
+                    int random = SecureRandom.getInstanceStrong().nextInt(size);
                     resultBuilder.append(feedbackBeans.get(random).getText());
                 }
             } catch (Exception e) {
@@ -133,7 +140,7 @@ public class SlackApp {
             try {
                 int size = criticaBeans.size();
                 if (size > 0) {
-                    int random = RandomUtils.nextInt(0, size);
+                    int random = SecureRandom.getInstanceStrong().nextInt(size);
                     resultBuilder.append(criticaBeans.get(random).getText());
                 }
             } catch (Exception e) {
@@ -143,7 +150,7 @@ public class SlackApp {
             try {
                 int size = eseBeans.size();
                 if (size > 0) {
-                    int random = RandomUtils.nextInt(0, size);
+                    int random = SecureRandom.getInstanceStrong().nextInt(size);
                     resultBuilder.append(eseBeans.get(random).getText());
                 }
             } catch (Exception e) {
@@ -153,7 +160,7 @@ public class SlackApp {
             try {
                 int size = everythingElseBeans.size();
                 if (size > 0) {
-                    int random = RandomUtils.nextInt(0, size);
+                    int random = SecureRandom.getInstanceStrong().nextInt(size);
                     resultBuilder.append(everythingElseBeans.get(random).getText());
                 } else {
                     resultBuilder.append("Qualcosa!");
@@ -194,10 +201,10 @@ public class SlackApp {
     @Bean
     public App initSlackApp() {
         AppConfig appConfig = AppConfig.builder().
-//				clientId(clientId).
-//				requestVerificationEnabled(false).
-//				clientSecret(clientSecret).
-//				signingSecret(signingSecret).
+				/*clientId(clientId).
+				requestVerificationEnabled(false).*/
+				clientSecret(clientSecret).
+				signingSecret(signingSecret).
         singleTeamBotToken(botToken).build();
         App app = new App(appConfig);
         app.event(AppMentionEvent.class, mentionEventHandler(catalogManager));
