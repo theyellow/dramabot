@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class SlackApp {
 
     public static final String IN_CHANNEL = "in_channel";
     public static final String ERROR_TEXT = "Orpo, ce vustu? Hai bisogno di un feedback? O vuoi che ti faccia una bella domanda critica? Qualsiasi cosa ti crucci, chiedimi!";
+    private static SecureRandom secureRandom;
 
     @Value(value = "${slack.botToken}")
     private String botToken;
@@ -123,50 +125,35 @@ public class SlackApp {
                                         List<CatalogEntryBean> feedbackBeans, List<CatalogEntryBean> everythingElseBeans, String payloadText,
                                         StringBuilder resultBuilder, String responseType) {
         if (null != payloadText) {
+            try {
+                secureRandom = SecureRandom.getInstanceStrong();
+            } catch (NoSuchAlgorithmException e) {
+                logger.error("Error getting SecureRandom: {}", e.getMessage());
+            }
             if (payloadText.contains("feedback") || payloadText.contains("vorrei")
                     || payloadText.contains(" pens") || payloadText.startsWith("pens")) {
-                try {
-                    int size = feedbackBeans.size();
-                    if (size > 0) {
-                        int random = SecureRandom.getInstanceStrong().nextInt(size);
-                        resultBuilder.append(feedbackBeans.get(random).getText());
-                    }
-                } catch (Exception e) {
-                    logger.error("Error getting 'feedback' bean.");
+                int size = feedbackBeans.size();
+                if (size > 0) {
+                    resultBuilder.append(feedbackBeans.get(secureRandom.nextInt(size)).getText());
                 }
             } else if (payloadText.contains("domanda") || payloadText.contains("critic")
                     || payloadText.contains(" devo ") || payloadText.contains(" devi ") || payloadText.startsWith("devo ")
                     || payloadText.startsWith("devi ")) {
-                try {
-                    int size = criticaBeans.size();
-                    if (size > 0) {
-                        int random = SecureRandom.getInstanceStrong().nextInt(size);
-                        resultBuilder.append(criticaBeans.get(random).getText());
-                    }
-                } catch (Exception e) {
-                    logger.error("Error getting 'critical' bean.");
+                int size = criticaBeans.size();
+                if (size > 0) {
+                    resultBuilder.append(criticaBeans.get(secureRandom.nextInt(size)).getText());
                 }
             } else if (payloadText.contains("capisc") || payloadText.contains("dubbi")) {
-                try {
-                    int size = eseBeans.size();
-                    if (size > 0) {
-                        int random = SecureRandom.getInstanceStrong().nextInt(size);
-                        resultBuilder.append(eseBeans.get(random).getText());
-                    }
-                } catch (Exception e) {
-                    logger.error("Error getting 'e se' bean.");
+                int size = eseBeans.size();
+                if (size > 0) {
+                    resultBuilder.append(eseBeans.get(secureRandom.nextInt(size)).getText());
                 }
             } else if (payloadText.contains("qualcosa")) {
-                try {
-                    int size = everythingElseBeans.size();
-                    if (size > 0) {
-                        int random = SecureRandom.getInstanceStrong().nextInt(size);
-                        resultBuilder.append(everythingElseBeans.get(random).getText());
-                    } else {
-                        resultBuilder.append("Qualcosa!");
-                    }
-                } catch (Exception e) {
-                    logger.error("Error getting 'everything else' bean.");
+                int size = everythingElseBeans.size();
+                if (size > 0) {
+                    resultBuilder.append(everythingElseBeans.get(secureRandom.nextInt(size)).getText());
+                } else {
+                    resultBuilder.append("Qualcosa!");
                 }
             } else if (payloadText.contains("ador")) {
                 resultBuilder.append("Anch'io!");
