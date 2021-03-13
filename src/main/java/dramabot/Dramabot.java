@@ -24,8 +24,7 @@ public class Dramabot {
     private final Logger logger = LoggerFactory.getLogger(Dramabot.class);
 
     /**
-     * Entry point of the application. Run this method to start the sample bots, but
-     * don't forget to add the correct tokens in application.properties file.
+     * Entry point of dramabot. Everything starts here...
      *
 	 * @param args arguments given on commandline
      */
