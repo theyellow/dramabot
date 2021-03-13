@@ -38,6 +38,12 @@ public class SlackApp {
     public static final String IN_CHANNEL = "in_channel";
     public static final String ERROR_TEXT = "Orpo, ce vustu? Hai bisogno di un feedback? O vuoi che ti faccia una bella domanda critica? Qualsiasi cosa ti crucci, chiedimi!";
     private static final Logger logger = LoggerFactory.getLogger(SlackApp.class);
+    public static final String E_SE = "e se";
+    public static final String CRITICA = "critica";
+    public static final String FEEDBACK = "feedback";
+    public static final String EVERYTHING_ELSE = "everything else";
+    public static final String TICK_OUT = "'";
+    public static final String TICK_IN = " '";
     private static SecureRandom secureRandom;
 
     @Value(value = "${slack.botToken}")
@@ -57,12 +63,8 @@ public class SlackApp {
 
     private static SlashCommandHandler dramabotCommandHandler(CatalogManager catalogManager) {
         return (req, ctx) -> {
-            List<CatalogEntryBean> eses = new ArrayList<>();
-            List<CatalogEntryBean> critics = new ArrayList<>();
-            List<CatalogEntryBean> feedbacks = new ArrayList<>();
-            List<CatalogEntryBean> everythingElses = new ArrayList<>();
             Map<String, List<CatalogEntryBean>> authors = new HashMap<>();
-            fillBeansWithDatabaseContent(authors, catalogManager, eses, critics, feedbacks, everythingElses);
+            Map<String, List<CatalogEntryBean>> allBeans = fillAuthorsAndReturnAllBeansWithDatabaseContent(authors, catalogManager);
             SlashCommandPayload payload = req.getPayload();
             String userId = payload.getUserId();
             String userName = payload.getUserName();
@@ -80,7 +82,7 @@ public class SlackApp {
             logger.debug("In channel {} a command '{}' " + "was sent by {}. The text was '{}', as "
                             + "response url '{}' was given. UserId: {} ChannelId:{}",
                     channelName, command, userName, payloadText, responseUrl, userId, channelId);
-            responseType = appendPayload(authors, eses, critics, feedbacks, everythingElses, payloadText,
+            responseType = appendPayload(authors, allBeans, payloadText,
                     resultBuilder, responseType);
             String text = resultBuilder.toString();
             SlashCommandResponse response = SlashCommandResponse.builder().text(text).responseType(responseType)
@@ -89,8 +91,7 @@ public class SlackApp {
         };
     }
 
-    private static String appendPayload(Map<String, List<CatalogEntryBean>> authors, List<CatalogEntryBean> eseBeans, List<CatalogEntryBean> criticaBeans,
-                                        List<CatalogEntryBean> feedbackBeans, List<CatalogEntryBean> everythingElseBeans, String payloadText,
+    private static String appendPayload(Map<String, List<CatalogEntryBean>> authors, Map<String, List<CatalogEntryBean>> allBeans, String payloadText,
                                         StringBuilder resultBuilder, String responseType) {
         if (null != payloadText) {
             try {
@@ -99,7 +100,7 @@ public class SlackApp {
                 logger.error("Error getting SecureRandom: {}", e.getMessage());
                 return responseType;
             }
-            responseType = getResponseTypeAndAppend(authors, eseBeans, criticaBeans, feedbackBeans, everythingElseBeans, payloadText, resultBuilder, responseType);
+            responseType = getResponseTypeAndAppend(authors, allBeans, payloadText, resultBuilder, responseType);
         } else {
             // if null don't post in channel but private
             responseType = "ephemeral";
@@ -110,20 +111,25 @@ public class SlackApp {
         return responseType;
     }
 
-    private static String getResponseTypeAndAppend(Map<String, List<CatalogEntryBean>> authorsMap, List<CatalogEntryBean> eseBeans, List<CatalogEntryBean> criticaBeans, List<CatalogEntryBean> feedbackBeans, List<CatalogEntryBean> everythingElseBeans, String payloadText, StringBuilder resultBuilder, String responseType) {
+    private static String getResponseTypeAndAppend(Map<String, List<CatalogEntryBean>> authorsMap, Map<String, List<CatalogEntryBean>> allBeans, String payloadText, StringBuilder resultBuilder, String responseType) {
         Map<String, String[]> authorTranslations = new HashMap<>();
         authorTranslations.put("gubiani", new String[]{"Anna", "Gubiani", "anute"});
         authorTranslations.put("tollis", new String[]{"Giulia", "Tollis"});
         authorTranslations.put("ursella", new String[]{"Stefania", "Ursella"});
         authorTranslations.put("dipauli", new String[]{"Alessandro", "Pauli", "dipi"});
-        String[] allAuthors = authorTranslations.entrySet().stream().map(Map.Entry::getValue).flatMap(Arrays::stream).toArray(String[]::new);
+        String[] allAuthors = authorTranslations.values().stream().flatMap(Arrays::stream).toArray(String[]::new);
 
-        String[] feedbackKeywords = {"feedback", "vorrei", " pens", "pens", "secondo te"};
+        String[] feedbackKeywords = {FEEDBACK, "vorrei", " pens", "pens", "secondo te"};
         String[] criticKeywords = {"domanda", "critic", " devo ", " devi ", "devo ", "devi "};
         String[] eseKeywords = {"capisc", "dubbi", "spiega", "caga", "aiut", "dire", "dici", "dimmi"};
         String[] keywordsMeToo = {"ador", " amo", "amo"};
 
         String[] helpCommands = {"theyellow", "il tedesco", "help", "bee", "stupid", "merda"};
+
+        List<CatalogEntryBean> eseBeans = allBeans.get(E_SE);
+        List<CatalogEntryBean> criticaBeans = allBeans.get(CRITICA);
+        List<CatalogEntryBean> feedbackBeans = allBeans.get(FEEDBACK);
+        List<CatalogEntryBean> everythingElseBeans = allBeans.get(EVERYTHING_ELSE);
 
         String something = "qualcosa";
         if (containsOne(payloadText, feedbackKeywords)) {
@@ -150,10 +156,10 @@ public class SlackApp {
 
     private static void appendCommands(StringBuilder resultBuilder, String[] feedbackKeywords, String[] criticKeywords, String[] eseKeywords, String[] keywordsMeToo) {
         resultBuilder.append("\nComandi possibili: ");
-        Arrays.stream(feedbackKeywords).forEach(x -> resultBuilder.append(" '" + x + "'"));
-        Arrays.stream(criticKeywords).forEach(x -> resultBuilder.append(" '" + x + "'"));
-        Arrays.stream(eseKeywords).forEach(x -> resultBuilder.append(" '" + x + "'"));
-        Arrays.stream(keywordsMeToo).forEach(x -> resultBuilder.append(" '" + x + "'"));
+        Arrays.stream(feedbackKeywords).forEach(x -> resultBuilder.append(TICK_IN).append(x).append(TICK_OUT));
+        Arrays.stream(criticKeywords).forEach(x -> resultBuilder.append(TICK_IN).append(x).append(TICK_OUT));
+        Arrays.stream(eseKeywords).forEach(x -> resultBuilder.append(TICK_IN).append(x).append(TICK_OUT));
+        Arrays.stream(keywordsMeToo).forEach(x -> resultBuilder.append(TICK_IN).append(x).append(TICK_OUT));
     }
 
     @NotNull
@@ -180,22 +186,30 @@ public class SlackApp {
         }
     }
 
-    private static void fillBeansWithDatabaseContent(Map<String, List<CatalogEntryBean>> authors, CatalogManager catalogManager, List<CatalogEntryBean> eseBeans,
-                                                     List<CatalogEntryBean> criticaBeans, List<CatalogEntryBean> feedbackBeans,
-                                                     List<CatalogEntryBean> everythingElseBeans) {
+    private static Map<String, List<CatalogEntryBean>> fillAuthorsAndReturnAllBeansWithDatabaseContent(Map<String, List<CatalogEntryBean>> authors, CatalogManager catalogManager) {
+        List<CatalogEntryBean> eseBeans = new ArrayList<>();
+        List<CatalogEntryBean> criticaBeans = new ArrayList<>();
+        List<CatalogEntryBean> feedbackBeans = new ArrayList<>();
+        List<CatalogEntryBean> everythingElseBeans = new ArrayList<>();
         List<CatalogEntryBean> allBeans = catalogManager.getBeansFromDatabase();
         for (CatalogEntryBean catalogEntryBean : allBeans) {
-            if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals("e se")) {
+            if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals(E_SE)) {
                 eseBeans.add(catalogEntryBean);
-            } else if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals("critica")) {
+            } else if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals(CRITICA)) {
                 criticaBeans.add(catalogEntryBean);
-            } else if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals("feedback")) {
+            } else if (catalogEntryBean.getType() != null && catalogEntryBean.getType().trim().equals(FEEDBACK)) {
                 feedbackBeans.add(catalogEntryBean);
             } else {
                 everythingElseBeans.add(catalogEntryBean);
             }
             fillAuthorMap(authors, catalogEntryBean);
         }
+        Map<String, List<CatalogEntryBean>> result = new HashMap<>();
+        result.put(E_SE, eseBeans);
+        result.put(CRITICA, criticaBeans);
+        result.put(FEEDBACK, feedbackBeans);
+        result.put(EVERYTHING_ELSE, everythingElseBeans);
+        return result;
     }
 
     private static void fillAuthorMap(Map<String, List<CatalogEntryBean>> authors, CatalogEntryBean catalogEntryBean) {
@@ -262,24 +276,15 @@ public class SlackApp {
     private BoltEventHandler<AppMentionEvent> mentionEventHandler(CatalogManager catalogManager) {
         return (req, ctx) -> {
             AppMentionEvent event = req.getEvent();
-            List<CatalogEntryBean> eseBeans = new ArrayList<>();
-            List<CatalogEntryBean> criticaBeans = new ArrayList<>();
-            List<CatalogEntryBean> feedbackBeans = new ArrayList<>();
-            List<CatalogEntryBean> everythingElseBeans = new ArrayList<>();
             Map<String, List<CatalogEntryBean>> authors = new HashMap<>();
-            try {
-                fillBeansWithDatabaseContent(authors, catalogManager, eseBeans, criticaBeans, feedbackBeans,
-                        everythingElseBeans);
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-            }
+            Map<String, List<CatalogEntryBean>> allBeans = fillAuthorsAndReturnAllBeansWithDatabaseContent(authors, catalogManager);
             String payloadText = event.getText();
             String username = event.getUsername();
             username = username == null ? "" : username;
             StringBuilder resultBuilder = new StringBuilder();
             // default response in channel
             String responseType = IN_CHANNEL;
-            responseType = appendPayload(authors, eseBeans, criticaBeans, feedbackBeans, everythingElseBeans, payloadText,
+            responseType = appendPayload(authors, allBeans, payloadText,
                     resultBuilder, responseType);
             String iconEmoji = payloadText.contains(" amo") ? ":heart:" : null;
             logger.info("{} mentioned dramabot: {}", username, payloadText);
