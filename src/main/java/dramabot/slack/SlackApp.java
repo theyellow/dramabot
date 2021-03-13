@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.slack.api.model.block.Blocks.*;
@@ -129,41 +130,9 @@ public class SlackApp {
                 secureRandom = SecureRandom.getInstanceStrong();
             } catch (NoSuchAlgorithmException e) {
                 logger.error("Error getting SecureRandom: {}", e.getMessage());
+                return responseType;
             }
-            if (payloadText.contains("feedback") || payloadText.contains("vorrei")
-                    || payloadText.contains(" pens") || payloadText.startsWith("pens")) {
-                int size = feedbackBeans.size();
-                if (size > 0) {
-                    resultBuilder.append(feedbackBeans.get(secureRandom.nextInt(size)).getText());
-                }
-            } else if (payloadText.contains("domanda") || payloadText.contains("critic")
-                    || payloadText.contains(" devo ") || payloadText.contains(" devi ") || payloadText.startsWith("devo ")
-                    || payloadText.startsWith("devi ")) {
-                int size = criticaBeans.size();
-                if (size > 0) {
-                    resultBuilder.append(criticaBeans.get(secureRandom.nextInt(size)).getText());
-                }
-            } else if (payloadText.contains("capisc") || payloadText.contains("dubbi")) {
-                int size = eseBeans.size();
-                if (size > 0) {
-                    resultBuilder.append(eseBeans.get(secureRandom.nextInt(size)).getText());
-                }
-            } else if (payloadText.contains("qualcosa")) {
-                int size = everythingElseBeans.size();
-                if (size > 0) {
-                    resultBuilder.append(everythingElseBeans.get(secureRandom.nextInt(size)).getText());
-                } else {
-                    resultBuilder.append("Qualcosa!");
-                }
-            } else if (payloadText.contains("ador")) {
-                resultBuilder.append("Anch'io!");
-            } else if (payloadText.contains(" amo") || payloadText.startsWith("amo")) {
-                resultBuilder.append("Anch'io!");
-            } else {
-                // if not found don't post in channel but private
-                responseType = "ephemeral";
-                resultBuilder.append(ERROR_TEXT);
-            }
+            responseType = getResponseTypeAndAppend(eseBeans, criticaBeans, feedbackBeans, everythingElseBeans, payloadText, resultBuilder, responseType);
         } else {
             // if null don't post in channel but private
             responseType = "ephemeral";
@@ -172,6 +141,52 @@ public class SlackApp {
 
         }
         return responseType;
+    }
+
+    private static String getResponseTypeAndAppend(List<CatalogEntryBean> eseBeans, List<CatalogEntryBean> criticaBeans, List<CatalogEntryBean> feedbackBeans, List<CatalogEntryBean> everythingElseBeans, String payloadText, StringBuilder resultBuilder, String responseType) {
+        if (containsOne(payloadText, "feedback", "vorrei", " pens", "pens")) {
+            appendFeedback(feedbackBeans, resultBuilder);
+        } else if (containsOne(payloadText, "domanda", "critic", " devo ", " devi ", "devo ", "devi ")) {
+            appendFeedback(criticaBeans, resultBuilder);
+        } else if (containsOne(payloadText, "capisc", "dubbi")) {
+            appendFeedback(eseBeans, resultBuilder);
+        } else if (payloadText.contains("qualcosa")) {
+            appendQualcosa(everythingElseBeans, resultBuilder);
+        } else if (payloadText.contains("ador")) {
+            resultBuilder.append("Anch'io!");
+        } else if (containsOne(payloadText, " amo", "amo")) {
+            resultBuilder.append("Anch'io!");
+        } else {
+            // if not found don't post in channel but private
+            responseType = "ephemeral";
+            resultBuilder.append(ERROR_TEXT);
+        }
+        return responseType;
+    }
+
+    private static void appendQualcosa(List<CatalogEntryBean> everythingElseBeans, StringBuilder resultBuilder) {
+        int size = everythingElseBeans.size();
+        if (size > 0) {
+            resultBuilder.append(everythingElseBeans.get(secureRandom.nextInt(size)).getText());
+        }
+        else {
+            resultBuilder.append("Qualcosa!");
+        }
+    }
+
+    private static boolean containsOne(String payloadText, String... keywords) {
+        long count = 0;
+        if (keywords != null) {
+            count = Arrays.stream(keywords).filter(payloadText::contains).count();
+        }
+        return count != 0;
+    }
+
+    private static void appendFeedback(List<CatalogEntryBean> feedbackBeans, StringBuilder resultBuilder) {
+        int size = feedbackBeans.size();
+        if (size > 0) {
+            resultBuilder.append(feedbackBeans.get(secureRandom.nextInt(size)).getText());
+        }
     }
 
     private static void fillBeansWithDatabaseContent(CatalogManager catalogManager, List<CatalogEntryBean> eseBeans,
