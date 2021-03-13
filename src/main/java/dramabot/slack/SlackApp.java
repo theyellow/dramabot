@@ -245,7 +245,9 @@ public class SlackApp {
             String iconEmoji = payloadText.contains(" amo") ? ":heart:" : null;
             logger.info("{} mentioned dramabot: {}", username, payloadText);
             String text = resultBuilder.toString();
-//			if ("in_channel".equals(responseType)) {
+
+            // Don't use ephemeral for now
+            // if ("in_channel".equals(responseType)) {
 
             if (!IN_CHANNEL.equals(responseType)) {
                 logger.info("Normally a chatmessage would be posted personally, but in channels with @ - mentioning it's public");
@@ -253,10 +255,13 @@ public class SlackApp {
             ChatPostMessageRequest reqq = ChatPostMessageRequest.builder().text(text).channel(event.getChannel())
                     .iconEmoji(iconEmoji).token(botToken).build();
             ctx.asyncClient().chatPostMessage(reqq);
-//			} else {
-//				ChatPostEphemeralRequest reqq = ChatPostEphemeralRequest.builder().text(text).user(event.getUser()).channel(event.getChannel()).iconEmoji(iconEmoji).token(botToken).build();
-//				ctx.asyncClient().chatPostEphemeral(reqq);
-//			}
+
+            // else branch for ephemeral messages
+            //	} else {
+            //	    ChatPostEphemeralRequest reqq = ChatPostEphemeralRequest.builder().text(text).user(event.getUser()).channel(event.getChannel()).iconEmoji(iconEmoji).token(botToken).build();
+            //		ctx.asyncClient().chatPostEphemeral(reqq);
+            //	}
+
             return ctx.ack();
         };
     }
