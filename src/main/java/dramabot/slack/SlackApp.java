@@ -111,14 +111,12 @@ public class SlackApp {
     }
 
     private static String getResponseTypeAndAppend(Map<String, List<CatalogEntryBean>> authorsMap, List<CatalogEntryBean> eseBeans, List<CatalogEntryBean> criticaBeans, List<CatalogEntryBean> feedbackBeans, List<CatalogEntryBean> everythingElseBeans, String payloadText, StringBuilder resultBuilder, String responseType) {
-        String[] authors = authorsMap.entrySet().stream().map(x -> x.getKey().trim()).filter(x -> !"".equals(x.trim())).toArray(String[]::new);
         Map<String, String[]> authorTranslations = new HashMap<>();
-
         authorTranslations.put("gubiani", new String[]{"Anna", "Gubiani", "anute"});
         authorTranslations.put("tollis", new String[]{"Giulia", "Tollis"});
         authorTranslations.put("ursella", new String[]{"Stefania", "Ursella"});
         authorTranslations.put("dipauli", new String[]{"Alessandro", "Pauli", "dipi"});
-        String[] allAuthors = authorTranslations.entrySet().stream().map(x -> x.getValue()).flatMap(x -> Arrays.stream(x)).toArray(String[]::new);
+        String[] allAuthors = authorTranslations.entrySet().stream().map(Map.Entry::getValue).flatMap(Arrays::stream).toArray(String[]::new);
 
         String[] feedbackKeywords = {"feedback", "vorrei", " pens", "pens", "secondo te"};
         String[] criticKeywords = {"domanda", "critic", " devo ", " devi ", "devo ", "devi "};
@@ -163,7 +161,7 @@ public class SlackApp {
         return authorsMap.entrySet()
                 .stream().filter(
                         x ->  !x.getKey().trim().equals("") && containsOne(payloadText, authorTranslations.get(x.getKey())))
-                .map(x -> x.getValue()).flatMap(catalogEntryBeans -> catalogEntryBeans.stream())
+                .map(Map.Entry::getValue).flatMap(List::stream)
                 .collect(Collectors.toList());
     }
 
@@ -232,7 +230,7 @@ public class SlackApp {
 
             // Update the App Home for the given user
             ViewsPublishResponse res = ctx.client().viewsPublish(
-                    r -> r.userId(payload.getEvent().getUser()).hash(payload.getEvent().getView().getHash()) // To
+                    r -> r.userId(payload.getEvent().getUser()) //. hash(payload.getEvent().getView().getHash()) // To
                             // protect
                             // against
                             // possible
