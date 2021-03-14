@@ -13,7 +13,6 @@ import com.slack.api.model.event.AppMentionEvent;
 import com.slack.api.model.view.View;
 import dramabot.service.CatalogManager;
 import dramabot.service.model.CatalogEntryBean;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,15 +34,15 @@ import static com.slack.api.model.view.Views.view;
 @PropertySource({"file:config/slack-settings.properties"})
 public class SlackApp {
 
-    public static final String IN_CHANNEL = "in_channel";
-    public static final String ERROR_TEXT = "Orpo, ce vustu? Hai bisogno di un feedback? O vuoi che ti faccia una bella domanda critica? Qualsiasi cosa ti crucci, chiedimi!";
+    private static final String ERROR_TEXT = "Orpo, ce vustu? Hai bisogno di un feedback? O vuoi che ti faccia una bella domanda critica? Qualsiasi cosa ti crucci, chiedimi!";
+    private static final String IN_CHANNEL = "in_channel";
     private static final Logger logger = LoggerFactory.getLogger(SlackApp.class);
-    public static final String E_SE = "e se";
-    public static final String CRITICA = "critica";
-    public static final String FEEDBACK = "feedback";
-    public static final String EVERYTHING_ELSE = "everything else";
-    public static final String TICK_OUT = "'";
-    public static final String TICK_IN = " '";
+    private static final String E_SE = "e se";
+    private static final String CRITICA = "critica";
+    private static final String FEEDBACK = "feedback";
+    private static final String EVERYTHING_ELSE = "everything else";
+    private static final String TICK_OUT = "'";
+    private static final String TICK_IN = " '";
     private static SecureRandom secureRandom;
 
     @Value(value = "${slack.botToken}")
@@ -162,11 +161,10 @@ public class SlackApp {
         Arrays.stream(keywordsMeToo).forEach(x -> resultBuilder.append(TICK_IN).append(x).append(TICK_OUT));
     }
 
-    @NotNull
     private static List<CatalogEntryBean> getBeansForAuthor(Map<String, List<CatalogEntryBean>> authorsMap, Map<String, String[]> authorTranslations, String payloadText) {
         return authorsMap.entrySet()
                 .stream().filter(
-                        x ->  !x.getKey().trim().equals("") && containsOne(payloadText, authorTranslations.get(x.getKey())))
+                        x ->  !x.getKey().trim().isEmpty() && containsOne(payloadText, authorTranslations.get(x.getKey())))
                 .map(Map.Entry::getValue).flatMap(List::stream)
                 .collect(Collectors.toList());
     }
@@ -238,18 +236,14 @@ public class SlackApp {
                                             sectionBuilder
                                                     .text(markdownText(markdownTextBuilder ->
                                                             markdownTextBuilder
-                                                                    .text(":wave: Ciao, benvenut* a casa del* dramabot! (Last updated: " + now + ")"))))/*,
+                                                                    .text(":wave: Ciao, benvenut* a casa del* dramabot! (Last updated: " + now + ")")))),
                                     image(imageBuilder ->
-                                            imageBuilder.imageUrl("https://www.matearium.it/wp-content/uploads/2020/02/tondo_bianco.png"))*/)));
+                                            imageBuilder.imageUrl("https://www.matearium.it/wp-content/uploads/2020/02/tondo_bianco.png").altText("Matearium")))));
 
             // Update the App Home for the given user
             ViewsPublishResponse res = ctx.client().viewsPublish(
-                    r -> r.userId(payload.getEvent().getUser()) //. hash(payload.getEvent().getView().getHash()) // To
-                            // protect
-                            // against
-                            // possible
-                            // race
-                            // conditions
+                    r -> r.userId(payload.getEvent().getUser())
+                            //. hash(payload.getEvent().getView().getHash()) // To protect  against  possible  race  conditions
                             .view(appHomeView));
             if (!res.isOk()) {
                 logger.error("Home response was not ok");
