@@ -16,12 +16,17 @@ import dramabot.service.repository.CatalogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,8 +44,12 @@ public class CatalogManager {
     private static final Path CONFIG_PATH = FileSystems.getDefault().getPath(CONFIG_FILE_NAME);
     private static final Path MAGIC_CONFIG_PATH = FileSystems.getDefault().getPath(CATALOG_CSV);
     private static final Logger logger = LoggerFactory.getLogger(CatalogManager.class);
+
     @Autowired
     private CatalogRepository catalogRepository;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     public List<String[]> readAll(Reader reader) throws IOException {
         CSVParser parser = new CSVParserBuilder().withSeparator(';').withIgnoreQuotations(true).build();
@@ -92,7 +101,7 @@ public class CatalogManager {
         List<CatalogEntryBean> beans = new ArrayList<>();
         Iterable<CatalogEntry> all = catalogRepository.findAll();
         long size = all.spliterator().estimateSize();
-        if (size <= 0) {
+        if (0 >= size) {
             logger.error("No entries found on database");
         }
         all.forEach(x -> {
@@ -119,7 +128,7 @@ public class CatalogManager {
         } else {
             logger.error("Could not write config.csv. Is it writable?");
         }
-        if (path != null) {
+        if (null != path) {
             result = writeToFile(entryBeans, path, clazz);
         } else {
             result = false;
@@ -140,7 +149,7 @@ public class CatalogManager {
         beanToCsv.write(entryBeans);
         writer.close();
         List<CsvException> capturedExceptions = beanToCsv.getCapturedExceptions();
-        if (capturedExceptions != null && !capturedExceptions.isEmpty()) {
+        if (null != capturedExceptions && !capturedExceptions.isEmpty()) {
             logger.warn("there were {} exceptions thrown: {}", capturedExceptions.size(),
                     capturedExceptions.stream().flatMap(e -> Stream.of(e.getMessage())));
             result = false;
@@ -153,6 +162,7 @@ public class CatalogManager {
     public boolean initialize()
             throws URISyntaxException, IOException, CsvDataTypeMismatchException, CsvRequiredFieldEmptyException {
         List<CatalogEntryBean> beansFromFile = readBeansFromFile();
+        catalogRepository.deleteAll();
         for (CatalogEntryBean catalogEntryBean : beansFromFile) {
             CatalogEntry dbEntry = new CatalogEntry(catalogEntryBean.getText(), catalogEntryBean.getAuthor(),
                     catalogEntryBean.getType());
@@ -167,5 +177,46 @@ public class CatalogManager {
             logger.info("{} entries written to database", count);
         }
         return writeBeansToCatalogCsv(beansFromFile, CatalogEntryBean.class);
+    }
+
+    public boolean updateCatalog(String catalogUrl) {
+        boolean result = true;
+        try {
+            Path path = null;
+            if (Files.isWritable(CONFIG_PATH)) {
+                path = CONFIG_PATH;
+            } else if (Files.isWritable(MAGIC_CONFIG_PATH)) {
+                path = MAGIC_CONFIG_PATH;
+            }
+            if (null != path) {
+                File file = restTemplate.execute(catalogUrl, HttpMethod.GET, null, clientHttpResponse -> {
+                    File ret = File.createTempFile("downloadCatalog", "tmp");
+                    StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(ret));
+                    return ret;
+                });
+                if (null != file) {
+                    ReadableByteChannel readableByteChannel = Channels.newChannel(new FileInputStream(file));
+                    FileOutputStream fileOutputStream = new FileOutputStream(path.toUri().getPath());
+                    FileChannel fileChannel = fileOutputStream.getChannel();
+                    fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+                } else {
+                    logger.warn("file {} not downloaded", catalogUrl);
+                    result = false;
+                }
+            } else {
+                logger.error("Could not write config.csv. Is it writable?");
+                result = false;
+            }
+        } catch (FileNotFoundException e) {
+            logger.warn("file not found for {}", catalogUrl);
+            result = false;
+        } catch (MalformedURLException e) {
+            logger.warn("malformed url {}", catalogUrl);
+            result = false;
+        } catch (IOException e) {
+            logger.warn("io-exception for {}", catalogUrl);
+            result = false;
+        }
+        return result;
     }
 }
