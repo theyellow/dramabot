@@ -14,6 +14,9 @@ import com.slack.api.methods.response.files.FilesInfoResponse;
 import com.slack.api.methods.response.usergroups.users.UsergroupsUsersListResponse;
 import com.slack.api.methods.response.views.ViewsPublishResponse;
 import com.slack.api.model.File;
+import com.slack.api.model.ModelConfigurator;
+import com.slack.api.model.block.ImageBlock;
+import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.event.*;
 import com.slack.api.model.view.View;
 import dramabot.service.model.CatalogEntryBean;
@@ -58,6 +61,7 @@ public class SlackEventManager {
             String responseType = SlackApp.IN_CHANNEL;
             responseType = SlackManagerUtils.appendPayload(authors, allBeans, payloadText,
                     resultBuilder, responseType);
+            // egg 1
             String iconEmoji = payloadText.contains(" amo") ? ":heart:" : null;
             logger.debug("{} mentioned dramabot: {}", username, payloadText);
             String text = resultBuilder.toString();
@@ -192,25 +196,7 @@ public class SlackEventManager {
             int monthValue = now.getMonthValue();
             int year = now.getYear();
 
-            View appHomeView =
-                    view(view ->
-                            view.type("home").
-                                    blocks(asBlocks(
-                                            section(section ->
-                                                    section.text(
-                                                            markdownText(mt ->
-                                                                    mt.text(":wave: Ciao, benvenut* a casa del* dramabot!" +
-                                                                            "\nPuoi chiedermi feedback sul tuo testo, " +
-                                                                            "farti fare una domanda critica, raccontarmi i tuoi dubbi o chiedermi cosa " +
-                                                                            "hanno da dire Alessandro, Stefania, Giulia o Anna.\n" +
-                                                                            "Se ti rispondo male, puoi chiedere aiuto belando \"bee\"!\n" +
-                                                                            "Non ti dimenticare ogni volta di \"chiamarmi\" prima di parlare con me, " +
-                                                                            "digitando /dramabot oppure @dramabot \n" +
-                                                                            "(Oggi è il " + dayOfMonth + "." + monthValue + "." + year + ")")))),
-                                            image(imageBuilder ->
-                                                    imageBuilder
-                                                            .imageUrl("https://www.matearium.it/wp-content/uploads/2020/02/tondo_bianco.png")
-                                                            .altText("Matearium")))));
+            View appHomeView = view(getModelConfigurator(dayOfMonth, monthValue, year));
 
             // Update the App Home for the given user
             ViewsPublishResponse res = ctx.client().viewsPublish(
@@ -222,5 +208,29 @@ public class SlackEventManager {
             }
             return ctx.ack();
         };
+    }
+
+    private ModelConfigurator<View.ViewBuilder> getModelConfigurator(int dayOfMonth, int monthValue, int year) {
+        return view -> view.type("home").blocks(asBlocks(
+                createMainSection(dayOfMonth, monthValue, year),
+                createImageSection()));
+    }
+
+    private ImageBlock createImageSection() {
+        return image(imageBuilder -> imageBuilder
+                .imageUrl("https://www.matearium.it/wp-content/uploads/2020/02/tondo_bianco.png")
+                .altText("Matearium"));
+    }
+
+    private SectionBlock createMainSection(int dayOfMonth, int monthValue, int year) {
+        return section(section -> section.text(markdownText(mt ->
+                mt.text(":wave: Ciao, benvenut* a casa del* dramabot!" +
+                        "\nPuoi chiedermi feedback sul tuo testo, " +
+                        "farti fare una domanda critica, raccontarmi i tuoi dubbi o chiedermi cosa " +
+                        "hanno da dire Alessandro, Stefania, Giulia o Anna.\n" +
+                        "Se ti rispondo male, puoi chiedere aiuto belando \"bee\"!\n" +
+                        "Non ti dimenticare ogni volta di \"chiamarmi\" prima di parlare con me, " +
+                        "digitando /dramabot oppure @dramabot \n" +
+                        "(Oggi è il " + dayOfMonth + "." + monthValue + "." + year + ")"))));
     }
 }

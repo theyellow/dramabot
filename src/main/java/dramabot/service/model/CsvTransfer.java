@@ -14,7 +14,7 @@ public class CsvTransfer<T extends CsvBean> {
     }
 
     public List<String[]> getCsvStringList() {
-        if (csvStringList != null) return csvStringList;
+        if (null != csvStringList) return csvStringList;
         return new ArrayList<>();
     }
 
@@ -23,12 +23,12 @@ public class CsvTransfer<T extends CsvBean> {
     }
 
     public void addLine(String[] line) {
-        if (this.csvList == null) this.csvStringList = new ArrayList<>();
-        this.csvStringList.add(line);
+        if (null == csvList) csvStringList = new ArrayList<>();
+        csvStringList.add(line);
     }
 
     public List<T> getCsvList() {
-        if (csvList != null) return csvList;
+        if (null != csvList) return csvList;
         return new ArrayList<>();
     }
 

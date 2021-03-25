@@ -10,17 +10,15 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public final class SlackManagerUtils {
-
+public enum SlackManagerUtils {
+    ;
 
     private static SecureRandom secureRandom;
 
     private static final Logger logger = LoggerFactory.getLogger(SlackCommandManager.class);
 
-    private SlackManagerUtils() {}
-
-    public static String appendPayload(Map<String, List<CatalogEntryBean>> authors, Map<String, List<CatalogEntryBean>> allBeans, String payloadText,
-                                        StringBuilder resultBuilder, String responseType) {
+    public static String appendPayload(Map<String, ? extends List<CatalogEntryBean>> authors, Map<String, ? extends List<CatalogEntryBean>> allBeans, String payloadText,
+                                       StringBuilder resultBuilder, String responseType) {
         if (null != payloadText) {
             try {
                 secureRandom = SecureRandom.getInstanceStrong();
@@ -39,7 +37,7 @@ public final class SlackManagerUtils {
         return responseType;
     }
 
-    public static Map<String, List<CatalogEntryBean>> fillAuthorsAndReturnAllBeansWithDatabaseContent(Map<String, List<CatalogEntryBean>> authors, CatalogManager catalogManager) {
+    public static Map<String, List<CatalogEntryBean>> fillAuthorsAndReturnAllBeansWithDatabaseContent(Map<? super String, List<CatalogEntryBean>> authors, CatalogManager catalogManager) {
         List<CatalogEntryBean> eseBeans = new ArrayList<>();
         List<CatalogEntryBean> criticaBeans = new ArrayList<>();
         List<CatalogEntryBean> feedbackBeans = new ArrayList<>();
@@ -65,7 +63,7 @@ public final class SlackManagerUtils {
         return result;
     }
 
-    private static void fillAuthorMap(Map<String, List<CatalogEntryBean>> authors, CatalogEntryBean catalogEntryBean) {
+    private static void fillAuthorMap(Map<? super String, List<CatalogEntryBean>> authors, CatalogEntryBean catalogEntryBean) {
         String author = catalogEntryBean.getAuthor();
         if (null != author) {
             List<CatalogEntryBean> beans = authors.get(author.trim());
@@ -80,7 +78,7 @@ public final class SlackManagerUtils {
     }
 
 
-    private static String getResponseTypeAndAppend(Map<String, List<CatalogEntryBean>> authorsMap, Map<String, List<CatalogEntryBean>> allBeans, String payloadText, StringBuilder resultBuilder, String responseType) {
+    private static String getResponseTypeAndAppend(Map<String, ? extends List<CatalogEntryBean>> authorsMap, Map<String, ? extends List<CatalogEntryBean>> allBeans, String payloadText, StringBuilder resultBuilder, String responseType) {
         Map<String, String[]> authorTranslations = new HashMap<>();
         authorTranslations.put("gubiani", new String[]{"Anna", "Gubiani", "anute"});
         authorTranslations.put("tollis", new String[]{"Giulia", "Tollis"});
@@ -139,14 +137,14 @@ public final class SlackManagerUtils {
         return 0 != count;
     }
 
-    private static void appendRandomText(List<CatalogEntryBean> feedbackBeans, StringBuilder resultBuilder) {
+    private static void appendRandomText(List<? extends CatalogEntryBean> feedbackBeans, StringBuilder resultBuilder) {
         int size = feedbackBeans.size();
         if (0 < size) {
             resultBuilder.append(feedbackBeans.get(secureRandom.nextInt(size)).getText());
         }
     }
 
-    private static List<CatalogEntryBean> getBeansForAuthor(Map<String, List<CatalogEntryBean>> authorsMap, Map<String, String[]> authorTranslations, String payloadText) {
+    private static List<CatalogEntryBean> getBeansForAuthor(Map<String, ? extends List<CatalogEntryBean>> authorsMap, Map<String, String[]> authorTranslations, String payloadText) {
         return authorsMap.entrySet()
                 .stream().filter(
                         x -> !x.getKey().trim().isEmpty() && containsOne(payloadText, authorTranslations.get(x.getKey())))

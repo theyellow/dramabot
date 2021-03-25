@@ -12,7 +12,6 @@ public class CatalogEntryBean implements CsvBean {
     private String type;
 
     public CatalogEntryBean(String text, String author, String type) {
-        super();
         this.text = text;
         this.author = author;
         this.type = type;

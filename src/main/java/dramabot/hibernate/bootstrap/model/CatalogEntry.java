@@ -20,7 +20,6 @@ public class CatalogEntry {
     private String entryType;
 
     public CatalogEntry(String entryText, String entryAuthor, String entryType) {
-        super();
         this.entryText = entryText;
         this.entryAuthor = entryAuthor;
         this.entryType = entryType;

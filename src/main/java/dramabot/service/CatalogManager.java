@@ -195,15 +195,7 @@ public class CatalogManager {
                     return ret;
                 });
                 if (null != file) {
-                    try (ReadableByteChannel readableByteChannel = Channels.newChannel(new FileInputStream(file))) {
-                        FileChannel fileChannel;
-                        try (FileOutputStream fileOutputStream = new FileOutputStream(path.toUri().getPath())) {
-                            fileChannel = fileOutputStream.getChannel();
-                        }
-                        if (null != fileChannel && null != readableByteChannel) {
-                            fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-                        }
-                    }
+                    writeFile(path, file);
                 } else {
                     logger.warn("file {} not downloaded", catalogUrl);
                     result = false;
@@ -223,5 +215,16 @@ public class CatalogManager {
             result = false;
         }
         return result;
+    }
+
+    private void writeFile(Path path, File file) throws IOException {
+        try (ReadableByteChannel readableByteChannel = Channels.newChannel(new FileInputStream(file));
+             FileOutputStream fileOutputStream = new FileOutputStream(path.toUri().getPath())) {
+                FileChannel fileChannel;
+                fileChannel = fileOutputStream.getChannel();
+                if (null != readableByteChannel) {
+                    fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+                }
+        }
     }
 }
