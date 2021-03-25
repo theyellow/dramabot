@@ -32,17 +32,11 @@ public class SlackApp {
     @Value(value = "${slack.botToken}")
     private String botToken;
 
-//    @Value(value = "${slack.socketToken}")
-//    private String socketToken;
-
     @Value(value = "${slack.signingSecret}")
     private String signingSecret;
 
     @Value(value = "${slack.clientSecret}")
     private String clientSecret;
-
-//    @Value(value = "${slack.clientId}")
-//    private String clientId;
 
     @Bean
     public App dramabotApp(SlackCommandManager commandManager, SlackEventManager eventManager) {
