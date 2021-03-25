@@ -2,15 +2,15 @@ package dramabot.service;
 
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
-import com.slack.api.app_backend.events.payload.Authorization;
 import com.slack.api.bolt.handler.BoltEventHandler;
+import com.slack.api.methods.MethodsClient;
+import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.request.files.FilesInfoRequest;
 import com.slack.api.methods.request.usergroups.users.UsergroupsUsersListRequest;
 import com.slack.api.methods.response.files.FilesInfoResponse;
 import com.slack.api.methods.response.usergroups.users.UsergroupsUsersListResponse;
 import com.slack.api.methods.response.views.ViewsPublishResponse;
-import com.slack.api.model.Attachment;
 import com.slack.api.model.File;
 import com.slack.api.model.event.*;
 import com.slack.api.model.view.View;
@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -73,21 +74,14 @@ public class SlackEventManager {
     public BoltEventHandler<MessageEvent> getMessage() {
         return (req, ctx) -> {
             MessageEvent event = req.getEvent();
-            Integer eventTime = req.getEventTime();
-            boolean extSharedChannel = req.isExtSharedChannel();
-            List<Authorization> authorizations = req.getAuthorizations();
             String channel = event.getChannel();
             String text = event.getText();
-            List<Attachment> attachments = event.getAttachments();
-            //String username = event.getUsername();
             String channelId = ctx.getChannelId();
-            Map<String, String> additionalValues = ctx.getAdditionalValues();
             String botId = ctx.getBotId();
             String botUserId = ctx.getBotUserId();
             String requestUserToken = ctx.getRequestUserToken();
             Integer num = ctx.getRetryNum();
             String retryReason = ctx.getRetryReason();
-            //Logger logger = ctx.getLogger();
             logger.info("standard message event in channel (event): {} (ctx): {} ; " +
                             "request user token (ctx): {} ; bot was (ctx): {} botuser: {}; there were {} retries ; the text was: {}",
                     channel, channelId, requestUserToken, botId, botUserId, num, text);
@@ -101,21 +95,14 @@ public class SlackEventManager {
     public BoltEventHandler<MessageBotEvent> getBotMessage() {
         return (req, ctx) -> {
             MessageBotEvent event = req.getEvent();
-            Integer eventTime = req.getEventTime();
-            boolean extSharedChannel = req.isExtSharedChannel();
-            List<Authorization> authorizations = req.getAuthorizations();
             String channel = event.getChannel();
             String text = event.getText();
-            List<Attachment> attachments = event.getAttachments();
-            String username = event.getUsername();
             String channelId = ctx.getChannelId();
-            Map<String, String> additionalValues = ctx.getAdditionalValues();
             String botId = ctx.getBotId();
             String botUserId = ctx.getBotUserId();
             String requestUserToken = ctx.getRequestUserToken();
             Integer num = ctx.getRetryNum();
             String retryReason = ctx.getRetryReason();
-            //Logger logger = ctx.getLogger();
             logger.info("bot-message event in channel (event): {} (ctx): {} ; " +
                             "request user token (ctx): {} ; bot was (ctx): {} botuser: {}; there were {} retries ; the text was: {}",
                     channel, channelId, requestUserToken, botId, botUserId, num, text);
@@ -141,48 +128,46 @@ public class SlackEventManager {
         return (req, ctx) -> {
             logger.info("there was a FileSharedEvent");
             FileSharedEvent event = req.getEvent();
-            String teamId = req.getTeamId();
-            String user = event.getUserId();
-            FileSharedEvent.File file = event.getFile();
-            String requestUserId = ctx.getRequestUserId();
-            String teamIdFromContext = ctx.getTeamId();
-            FilesInfoResponse filesInfo = ctx.client().filesInfo(FilesInfoRequest.builder().token(botToken).file(file.getId()).build());
-            File sharedFile = filesInfo.getFile();
-
             logger.info("file shared event: {}", event);
-            logger.info("team from request: {} ; from context: {} ; user from event: {}, {} ; user " +
-                    "from context/request: {}", teamId, teamIdFromContext, user, file, requestUserId);
-            logger.info("shared file name: {}", sharedFile.getName());
-
-            UsergroupsUsersListRequest reqqq = UsergroupsUsersListRequest.builder().token(botToken).usergroup("S01RM9CR39C").build();
-            UsergroupsUsersListResponse usergroupsUsersListResponse = ctx.client().usergroupsUsersList(reqqq);
-            if (usergroupsUsersListResponse.isOk()) {
-                List<String> users = usergroupsUsersListResponse.getUsers();
-                logger.info("users: {}", users);
-                if (users.contains(user)) {
-                    if ("catalog.csv".equals(sharedFile.getName())) {
-                        boolean updatedCatalog = catalogManager.updateCatalog(sharedFile.getUrlPrivate());
-                        if (updatedCatalog) {
-                            try {
-                                if (catalogManager.initialize()) {
-                                    logger.info("updated catalog.csv from user {}",user);
-                                } else {
-                                    logger.warn("initializing beans from file to database failed");
-                                }
-                            } catch (URISyntaxException | CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
-                                logger.error("problem while reinitializing catalog: {}", e.getMessage());
-                            }
-                        }
-                    } else {
-                        logger.info("the file {} is not catalog.csv, so nothing was imported",sharedFile.getName());
-                    }
-                }
-            } else {
-                logger.warn("got error on response of usergroupuserlist-request: {}", usergroupsUsersListResponse.getError());
-            }
+            MethodsClient client = ctx.client();
+            FilesInfoResponse filesInfo = client.filesInfo(createFilesInfoRequest(event.getFile()));
+            File sharedFile = filesInfo.getFile();
+            String name = sharedFile.getName();
+            String user = event.getUserId();
+            logger.info("shared file '{}' by user '{}'", name, user);
+            updateCatalogInternal(user, client, sharedFile, name);
             logger.info("end of FileSharedEvent");
             return ctx.ack();
         };
+    }
+
+    private FilesInfoRequest createFilesInfoRequest(FileSharedEvent.File file) {
+        return FilesInfoRequest.builder().token(botToken).file(file.getId()).build();
+    }
+
+    private void updateCatalogInternal(String user, MethodsClient client, File sharedFile, String name) throws IOException, SlackApiException {
+        UsergroupsUsersListResponse usergroupsUsersListResponse = client.usergroupsUsersList(createUsergroupsUsersListRequest());
+        if (!"catalog.csv".equals(name) || !usergroupsUsersListResponse.isOk() ) {
+            logger.info("the file {} is not catalog.csv, so nothing was imported", name);
+        } else if (usergroupsUsersListResponse.getUsers().contains(user) && catalogManager.updateCatalog(sharedFile.getUrlPrivate())) {
+
+            try {
+                if (catalogManager.initialize()) {
+                    logger.info("updated catalog.csv from user {}", user);
+                } else {
+                    logger.warn("initializing beans from file to database failed");
+                }
+            } catch (URISyntaxException | CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
+                logger.error("problem while reinitializing catalog: {}", e.getMessage());
+            }
+
+        } else {
+            logger.warn("got error on response of usergroupuserlist-request: {}", usergroupsUsersListResponse.getError());
+        }
+    }
+
+    private UsergroupsUsersListRequest createUsergroupsUsersListRequest() {
+        return UsergroupsUsersListRequest.builder().token(botToken).usergroup("S01RM9CR39C").build();
     }
 
     public BoltEventHandler<MessageFileShareEvent> getMessageSharedFile() {

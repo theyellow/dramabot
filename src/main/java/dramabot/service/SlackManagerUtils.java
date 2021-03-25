@@ -10,12 +10,14 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SlackManagerUtils {
+public final class SlackManagerUtils {
 
 
     private static SecureRandom secureRandom;
 
     private static final Logger logger = LoggerFactory.getLogger(SlackCommandManager.class);
+
+    private SlackManagerUtils() {}
 
     public static String appendPayload(Map<String, List<CatalogEntryBean>> authors, Map<String, List<CatalogEntryBean>> allBeans, String payloadText,
                                         StringBuilder resultBuilder, String responseType) {

@@ -58,7 +58,6 @@ public class SlackCommandManager {
 
     public SlashCommandHandler getCatalogCommandHandler() {
         return (req, ctx) -> {
-            //var logger = ctx.logger;
             SlashCommandPayload payload = req.getPayload();
             String userId = payload.getUserId();
             if (!("U01L33BB9B2".equals(userId) || "U01K8BX3YSK".equals(userId))) {
