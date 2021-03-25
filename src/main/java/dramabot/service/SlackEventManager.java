@@ -2,7 +2,9 @@ package dramabot.service;
 
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
+import com.slack.api.bolt.context.builtin.EventContext;
 import com.slack.api.bolt.handler.BoltEventHandler;
+import com.slack.api.bolt.response.Response;
 import com.slack.api.methods.MethodsClient;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
@@ -74,43 +76,31 @@ public class SlackEventManager {
     public BoltEventHandler<MessageEvent> getMessage() {
         return (req, ctx) -> {
             MessageEvent event = req.getEvent();
-            String channel = event.getChannel();
-            String text = event.getText();
-            String channelId = ctx.getChannelId();
-            String botId = ctx.getBotId();
-            String botUserId = ctx.getBotUserId();
-            String requestUserToken = ctx.getRequestUserToken();
-            Integer num = ctx.getRetryNum();
-            String retryReason = ctx.getRetryReason();
-            logger.info("standard message event in channel (event): {} (ctx): {} ; " +
-                            "request user token (ctx): {} ; bot was (ctx): {} botuser: {}; there were {} retries ; the text was: {}",
-                    channel, channelId, requestUserToken, botId, botUserId, num, text);
-            if (0 < num) {
-                logger.warn("reason for retry: {}", retryReason);
-            }
-            return ctx.ack();
+            return createMessageResponse(ctx, event.getChannel(), event.getText(), event.getType());
         };
     }
 
     public BoltEventHandler<MessageBotEvent> getBotMessage() {
         return (req, ctx) -> {
             MessageBotEvent event = req.getEvent();
-            String channel = event.getChannel();
-            String text = event.getText();
-            String channelId = ctx.getChannelId();
-            String botId = ctx.getBotId();
-            String botUserId = ctx.getBotUserId();
-            String requestUserToken = ctx.getRequestUserToken();
-            Integer num = ctx.getRetryNum();
-            String retryReason = ctx.getRetryReason();
-            logger.info("bot-message event in channel (event): {} (ctx): {} ; " +
-                            "request user token (ctx): {} ; bot was (ctx): {} botuser: {}; there were {} retries ; the text was: {}",
-                    channel, channelId, requestUserToken, botId, botUserId, num, text);
-            if (0 < num) {
-                logger.warn("reason for retry: {}", retryReason);
-            }
-            return ctx.ack();
+            return createMessageResponse(ctx, event.getChannel(), event.getText(), event.getType());
         };
+    }
+
+    private Response createMessageResponse(EventContext ctx, String channel, String text, String eventType) {
+        String channelId = ctx.getChannelId();
+        String botId = ctx.getBotId();
+        String botUserId = ctx.getBotUserId();
+        String requestUserToken = ctx.getRequestUserToken();
+        Integer num = ctx.getRetryNum();
+        String retryReason = ctx.getRetryReason();
+        logger.info(eventType + "-message event in channel '{}' (ctx): {} request user token (ctx): {} ; bot was (ctx): {} " +
+                        "botuser: {}; there were {} retries ; the text was: {}",
+                channel, channelId, requestUserToken, botId, botUserId, num, text);
+        if (0 < num) {
+            logger.warn("reason for retry: {}", retryReason);
+        }
+        return ctx.ack();
     }
 
     public BoltEventHandler<FileCreatedEvent> getCreatedFile() {
