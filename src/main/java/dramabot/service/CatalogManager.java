@@ -31,8 +31,12 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Service
@@ -190,7 +194,8 @@ public class CatalogManager {
             }
             if (null != path) {
                 File file = restTemplate.execute(catalogUrl, HttpMethod.GET, null, clientHttpResponse -> {
-                    File ret = File.createTempFile("downloadCatalog", "tmp");
+                    FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+                    File ret = Files.createTempFile("downloadCatalog", "tmp", attr).toFile();
                     StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(ret));
                     return ret;
                 });
