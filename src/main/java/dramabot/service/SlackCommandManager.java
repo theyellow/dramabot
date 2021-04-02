@@ -3,7 +3,6 @@ package dramabot.service;
 import com.slack.api.app_backend.slash_commands.payload.SlashCommandPayload;
 import com.slack.api.app_backend.slash_commands.response.SlashCommandResponse;
 import com.slack.api.bolt.handler.builtin.SlashCommandHandler;
-import com.slack.api.methods.response.files.FilesUploadResponse;
 import dramabot.service.model.CatalogEntryBean;
 import dramabot.slack.SlackApp;
 import org.slf4j.Logger;
@@ -11,12 +10,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 @Service
 public class SlackCommandManager {
@@ -55,58 +52,5 @@ public class SlackCommandManager {
             return ctx.ack(response);
         };
     }
-
-    public SlashCommandHandler getCatalogCommandHandler() {
-        return (req, ctx) -> {
-            SlashCommandPayload payload = req.getPayload();
-            String userId = payload.getUserId();
-            if (!("U01L33BB9B2".equals(userId) || "U01K8BX3YSK".equals(userId))) {
-                return ctx.ack("There is no catalog");
-            }
-            // The name of the file you're going to upload
-            String filepath = "./config/catalog.csv";
-
-            // Call the files.upload method using the built-in WebClient
-            // The token you used to initialize your app is stored in the `context` object
-
-            Path path = null;
-            try {
-                URL systemResource = ClassLoader.getSystemResource(filepath);
-                if (null != systemResource) {
-                    path = Paths.get(systemResource.toURI());
-                } else {
-                    path = FileSystems.getDefault().getPath(filepath);
-                }
-            } catch (URISyntaxException e) {
-                logger.error("Could not find file {} ", filepath);
-            }
-            if (null != path) {
-                // effectively final for lambda expression... :
-                Path finalPath = path.normalize();
-                logger.info("uploading {}...", finalPath.toAbsolutePath());
-                FilesUploadResponse result = ctx.client().filesUpload(r -> r
-                        // The token you used to initialize your app is stored in the `context` object
-                        .token(ctx.getBotToken())
-                        .channels(Collections.singletonList(payload.getChannelId()))
-                        .initialComment("Here's my catalog :smile:")
-                        .file(finalPath.toFile())
-                        .filename("catalog.csv")
-                        .filetype("csv")
-                );
-                if (!result.isOk()) {
-                    logger.warn("could not upload file {}", result);
-                } else {
-                    logger.info("file {} uploaded", result.getFile());
-                }
-            } else {
-                logger.warn("there were no file found for upload, file is '{}'", filepath);
-            }
-            // Print result
-            return ctx.ack();
-        };
-    }
-
-
-
 
 }
