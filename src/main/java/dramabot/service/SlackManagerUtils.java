@@ -113,7 +113,8 @@ public enum SlackManagerUtils {
             resultBuilder.append("Anch'io!");
         } else if (containsOne(payloadText, helpCommands)) {
             appendCommands(resultBuilder, feedbackKeywords, criticKeywords, eseKeywords, keywordsMeToo);
-        } else {
+        }
+        else {
             // if not found don't post in channel but private
             responseType = "ephemeral";
             resultBuilder.append(SlackApp.ERROR_TEXT);

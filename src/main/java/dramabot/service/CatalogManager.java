@@ -8,6 +8,10 @@ import com.opencsv.bean.*;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
+import com.slack.api.methods.MethodsClient;
+import com.slack.api.methods.SlackApiException;
+import com.slack.api.methods.request.usergroups.users.UsergroupsUsersListRequest;
+import com.slack.api.methods.response.usergroups.users.UsergroupsUsersListResponse;
 import dramabot.hibernate.bootstrap.model.CatalogEntry;
 import dramabot.service.model.CatalogEntryBean;
 import dramabot.service.model.CsvBean;
@@ -232,4 +236,25 @@ public class CatalogManager {
                 }
         }
     }
+
+    public void updateCatalogInternal(String user, MethodsClient client, com.slack.api.model.File sharedFile, UsergroupsUsersListRequest request) throws IOException, SlackApiException {
+        UsergroupsUsersListResponse usergroupsUsersListResponse = client.usergroupsUsersList(request);
+        String name = sharedFile.getName();
+        if (!"catalog.csv".equals(name) || !usergroupsUsersListResponse.isOk() ) {
+            logger.info("the file {} is not catalog.csv, so nothing was imported", name);
+        } else if (usergroupsUsersListResponse.getUsers().contains(user) && updateCatalog(sharedFile.getUrlPrivate())) {
+            try {
+                if (initialize()) {
+                    logger.info("updated catalog.csv from user {}", user);
+                } else {
+                    logger.warn("initializing beans from file to database failed");
+                }
+            } catch (URISyntaxException | CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
+                logger.error("problem while reinitializing catalog: {}", e.getMessage());
+            }
+        } else {
+            logger.warn("got error on response of usergroupuserlist-request: {}", usergroupsUsersListResponse.getError());
+        }
+    }
+
 }
