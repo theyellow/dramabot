@@ -30,6 +30,12 @@
 			<version>1.7.1</version>
 		</dependency>
 		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.0.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-stdlib</artifactId>
 			<version>1.4.31</version>
@@ -65,7 +71,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
@@ -77,6 +83,11 @@
 			<artifactId>jackson-module-kotlin</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.slack.api</groupId>
+			<artifactId>bolt-servlet</artifactId>
+			<version>1.7.1</version>
+		</dependency>
+		<!--<dependency>
 			<groupId>com.slack.api</groupId>
 			<artifactId>bolt-socket-mode</artifactId>
 			<version>1.7.1</version>
@@ -94,7 +105,7 @@
 			<groupId>org.java-websocket</groupId>
 			<artifactId>Java-WebSocket</artifactId>
 			<version>1.5.1</version>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>com.opencsv</groupId>
 			<artifactId>opencsv</artifactId>
