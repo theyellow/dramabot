@@ -2,6 +2,7 @@ package dramabot;
 
 import com.slack.api.bolt.App;
 import com.slack.api.bolt.socket_mode.SocketModeApp;
+import com.slack.api.socket_mode.SocketModeClient;
 import dramabot.service.CatalogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,7 @@ public class Dramabot {
     public SocketModeApp socketModeApp(ApplicationContext ctx) {
         App app = ctx.getBean(App.class);
         try {
-            return new SocketModeApp(socketToken, app);
+            return new SocketModeApp(socketToken, SocketModeClient.Backend.JavaWebSocket, app);
         } catch (IOException e) {
             logger.error("SocketModeApp could not be started: {}", e.getMessage());
         }

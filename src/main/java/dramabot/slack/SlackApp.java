@@ -49,7 +49,6 @@ public class SlackApp {
         App app = new App(appConfig);
         app.event(AppMentionEvent.class, eventManager.mentionEventHandler());
         app.command("/dramabot", commandManager.dramabotCommandHandler());
-        //app.command("/catalogo", commandManager.getCatalogCommandHandler());
         app.event(AppHomeOpenedEvent.class, eventManager.getHome());
         app.event(MessageFileShareEvent.class, eventManager.getMessageSharedFile());
         app.event(FileSharedEvent.class, eventManager.getSharedFile());
