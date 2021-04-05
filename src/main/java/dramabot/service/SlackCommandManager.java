@@ -1,5 +1,6 @@
 package dramabot.service;
 
+import com.slack.api.Slack;
 import com.slack.api.app_backend.slash_commands.payload.SlashCommandPayload;
 import com.slack.api.bolt.handler.builtin.SlashCommandHandler;
 import com.slack.api.methods.AsyncMethodsClient;
@@ -36,13 +37,14 @@ public class SlackCommandManager {
 
     public SlashCommandHandler dramabotCommandHandler() {
         return (req, ctx) -> {
-            AsyncMethodsClient client = ctx.asyncClient();
-            executorService.execute(() -> createAsyncDramabotResponse(req, client));
+            executorService.execute(() -> createAsyncDramabotResponse(req));
             return ctx.ack();
         };
     }
 
-    private void createAsyncDramabotResponse(com.slack.api.bolt.request.builtin.SlashCommandRequest req, AsyncMethodsClient client) {
+    private void createAsyncDramabotResponse(com.slack.api.bolt.request.builtin.SlashCommandRequest req) {
+        Slack slack = Slack.getInstance();
+        AsyncMethodsClient client = slack.methodsAsync(botToken);
         Map<String, List<CatalogEntryBean>> authors = new HashMap<>();
         Map<String, List<CatalogEntryBean>> allBeans = SlackManagerUtils.fillAuthorsAndReturnAllBeansWithDatabaseContent(authors, catalogManager);
         SlashCommandPayload payload = req.getPayload();
