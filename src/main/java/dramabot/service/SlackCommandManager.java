@@ -77,7 +77,7 @@ public class SlackCommandManager {
         } else {
             try {
                 SlackManagerUtils.doCatalogCsvResponse(client, userId, channelId, botToken);
-            } catch (IOException | SlackApiException e) {
+            } catch (IOException | SlackApiException | InterruptedException e) {
                 logger.debug("Error in /dramabot - command while searching for catalog", e);
             }
         }

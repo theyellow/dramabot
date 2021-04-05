@@ -168,13 +168,14 @@ public enum SlackManagerUtils {
                 .collect(Collectors.toList());
     }
 
-    public static void doCatalogCsvResponse(AsyncMethodsClient client, String user, String channelId, String botToken) throws IOException, SlackApiException {
+    public static void doCatalogCsvResponse(AsyncMethodsClient client, String user, String channelId, String botToken) throws IOException, SlackApiException, InterruptedException {
         Future<UsergroupsUsersListResponse> responseFuture = client.usergroupsUsersList(createUsergroupsUsersListRequest(botToken));
         UsergroupsUsersListResponse usergroupsUsersListResponse = null;
         try {
             usergroupsUsersListResponse = responseFuture.get();
         } catch (InterruptedException e) {
             logger.warn("future of doCatalogCsvResponse got interrupted", e);
+            throw e;
         } catch (ExecutionException e) {
             logger.warn("future of doCatalogCsvResponse couldn't be executed", e);
         }
@@ -189,7 +190,7 @@ public enum SlackManagerUtils {
         return UsergroupsUsersListRequest.builder().token(botToken).usergroup("S01RM9CR39C").build();
     }
 
-    private static void uploadCatalog(AsyncMethodsClient client, String botToken, String channelId) {
+    private static void uploadCatalog(AsyncMethodsClient client, String botToken, String channelId) throws InterruptedException {
         // The name of the file to upload
         String filepath = "./config/catalog.csv";
         Path path = null;
@@ -221,6 +222,7 @@ public enum SlackManagerUtils {
                 response = resultFuture.get();
             } catch (InterruptedException e) {
                 logger.warn("future of updateCatalog got interrupted", e);
+                throw e;
             } catch (ExecutionException e) {
                 logger.warn("future of updateCatalog couldn't be executed", e);
             }

@@ -67,7 +67,11 @@ public class SlackEventManager {
             ctx.asyncClient().chatPostMessage(reqq);
 
             if (payloadText.contains("catalogo")) {
-                SlackManagerUtils.doCatalogCsvResponse(ctx.asyncClient(), event.getUser(), event.getChannel(), botToken);
+                try {
+                    SlackManagerUtils.doCatalogCsvResponse(ctx.asyncClient(), event.getUser(), event.getChannel(), botToken);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
             return ctx.ack();
         };
