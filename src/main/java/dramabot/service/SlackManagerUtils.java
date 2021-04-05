@@ -1,13 +1,27 @@
 package dramabot.service;
 
+import com.slack.api.methods.AsyncMethodsClient;
+import com.slack.api.methods.SlackApiException;
+import com.slack.api.methods.request.usergroups.users.UsergroupsUsersListRequest;
+import com.slack.api.methods.response.files.FilesUploadResponse;
+import com.slack.api.methods.response.usergroups.users.UsergroupsUsersListResponse;
 import dramabot.service.model.CatalogEntryBean;
 import dramabot.slack.SlackApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 public enum SlackManagerUtils {
@@ -153,5 +167,70 @@ public enum SlackManagerUtils {
                 .collect(Collectors.toList());
     }
 
+    public static void doCatalogCsvResponse(AsyncMethodsClient client, String user, String channelId, String botToken) throws IOException, SlackApiException {
+        Future<UsergroupsUsersListResponse> responseFuture = client.usergroupsUsersList(createUsergroupsUsersListRequest(botToken));
+        UsergroupsUsersListResponse usergroupsUsersListResponse = null;
+        try {
+            usergroupsUsersListResponse = responseFuture.get();
+        } catch (InterruptedException e) {
+            logger.warn("future of doCatalogCsvResponse got interrupted", e);
+        } catch (ExecutionException e) {
+            logger.warn("future of doCatalogCsvResponse couldn't be executed", e);
+        }
+        if (null != usergroupsUsersListResponse && usergroupsUsersListResponse.isOk() && usergroupsUsersListResponse.getUsers().contains(user)) {
+            uploadCatalog(client, botToken, channelId);
+        } else {
+            logger.info("the user {} is not in administrators bot group, so nothing was imported", user);
+        }
+    }
+
+    public static UsergroupsUsersListRequest createUsergroupsUsersListRequest(String botToken) {
+        return UsergroupsUsersListRequest.builder().token(botToken).usergroup("S01RM9CR39C").build();
+    }
+
+    private static void uploadCatalog(AsyncMethodsClient client, String botToken, String channelId) {
+        // The name of the file to upload
+        String filepath = "./config/catalog.csv";
+        Path path = null;
+        try {
+            URL systemResource = ClassLoader.getSystemResource(filepath);
+            if (null != systemResource) {
+                path = Paths.get(systemResource.toURI());
+            } else {
+                path = FileSystems.getDefault().getPath(filepath);
+            }
+        } catch (URISyntaxException e) {
+            logger.error("Could not find file {} ", filepath);
+        }
+        if (null != path) {
+            // effectively final for lambda expression... :
+            Path finalPath = path.normalize();
+            logger.info("uploading {}...", finalPath.toAbsolutePath());
+            CompletableFuture<FilesUploadResponse> resultFuture = client.filesUpload(r -> r
+                    // The token you used to initialize your app is stored in the `context` object
+                    .token(botToken)
+                    .initialComment("Here's my catalog :smile:")
+                    .file(finalPath.toFile())
+                    .filename("catalog.csv")
+                    .channels(Collections.singletonList(channelId))
+                    .filetype("csv")
+            );
+            FilesUploadResponse response = null;
+            try {
+                response = resultFuture.get();
+            } catch (InterruptedException e) {
+                logger.warn("future of updateCatalog got interrupted", e);
+            } catch (ExecutionException e) {
+                logger.warn("future of updateCatalog couldn't be executed", e);
+            }
+            if (null == response || !response.isOk()) {
+                logger.warn("could not upload file {}", response);
+            } else {
+                logger.info("file {} uploaded", response.getFile().getName());
+            }
+        } else {
+            logger.warn("there were no file found for upload, file is '{}'", filepath);
+        }
+    }
 
 }

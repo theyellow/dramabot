@@ -15,6 +15,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @Configuration
 @PropertySource({"file:config/slack-settings.properties"})
 public class SlackApp {
@@ -67,4 +70,10 @@ public class SlackApp {
         };
         return builder.interceptors(interceptor).build();
     }
+
+    @Bean
+    public ExecutorService executorService() {
+        return Executors.newFixedThreadPool(5);
+    }
+
 }

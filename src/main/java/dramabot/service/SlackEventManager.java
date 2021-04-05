@@ -7,10 +7,7 @@ import com.slack.api.methods.MethodsClient;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.request.files.FilesInfoRequest;
-import com.slack.api.methods.request.usergroups.users.UsergroupsUsersListRequest;
 import com.slack.api.methods.response.files.FilesInfoResponse;
-import com.slack.api.methods.response.files.FilesUploadResponse;
-import com.slack.api.methods.response.usergroups.users.UsergroupsUsersListResponse;
 import com.slack.api.methods.response.views.ViewsPublishResponse;
 import com.slack.api.model.File;
 import com.slack.api.model.ModelConfigurator;
@@ -27,11 +24,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -74,59 +66,11 @@ public class SlackEventManager {
                     .iconEmoji(iconEmoji).token(botToken).build();
             ctx.asyncClient().chatPostMessage(reqq);
 
-            checkForCatalogCsvRequest(ctx, event, payloadText);
+            if (payloadText.contains("catalogo")) {
+                SlackManagerUtils.doCatalogCsvResponse(ctx.asyncClient(), event.getUser(), event.getChannel(), botToken);
+            }
             return ctx.ack();
         };
-    }
-
-    private void checkForCatalogCsvRequest(EventContext ctx, AppMentionEvent event, String payloadText) throws IOException, SlackApiException {
-        if (payloadText.contains("catalogo")) {
-            MethodsClient client = ctx.client();
-            UsergroupsUsersListResponse usergroupsUsersListResponse = client.usergroupsUsersList(createUsergroupsUsersListRequest());
-            if (usergroupsUsersListResponse.isOk() && usergroupsUsersListResponse.getUsers().contains(event.getUser())) {
-
-                // The name of the file you're going to upload
-                String filepath = "./config/catalog.csv";
-
-                // Call the files.upload method using the built-in WebClient
-                // The token you used to initialize your app is stored in the `context` object
-
-                Path path = null;
-                try {
-                    URL systemResource = ClassLoader.getSystemResource(filepath);
-                    if (null != systemResource) {
-                        path = Paths.get(systemResource.toURI());
-                    } else {
-                        path = FileSystems.getDefault().getPath(filepath);
-                    }
-                } catch (URISyntaxException e) {
-                    logger.error("Could not find file {} ", filepath);
-                }
-                if (null != path) {
-                    // effectively final for lambda expression... :
-                    Path finalPath = path.normalize();
-                    logger.info("uploading {}...", finalPath.toAbsolutePath());
-                    FilesUploadResponse result = client.filesUpload(r -> r
-                            // The token you used to initialize your app is stored in the `context` object
-                            .token(ctx.getBotToken())
-                            .initialComment("Here's my catalog :smile:")
-                            .file(finalPath.toFile())
-                            .filename("catalog.csv")
-                            .filetype("csv")
-                    );
-                    if (!result.isOk()) {
-                        logger.warn("could not upload file {}", result);
-                    } else {
-                        logger.info("file {} uploaded", result.getFile());
-                    }
-                } else {
-                    logger.warn("there were no file found for upload, file is '{}'", filepath);
-                }
-            } else {
-                logger.info("the user {} is not in administrators bot group, so nothing was imported", event.getUser());
-            }
-
-        }
     }
 
     public BoltEventHandler<MessageEvent> getMessage() {
@@ -193,11 +137,6 @@ public class SlackEventManager {
         return FilesInfoRequest.builder().token(botToken).file(file.getId()).build();
     }
 
-
-    private UsergroupsUsersListRequest createUsergroupsUsersListRequest() {
-        return UsergroupsUsersListRequest.builder().token(botToken).usergroup("S01RM9CR39C").build();
-    }
-
     public BoltEventHandler<MessageFileShareEvent> getMessageSharedFile() {
         return (req, ctx) -> {
             logger.info("there was a MessageFileShareEvent");
@@ -224,7 +163,7 @@ public class SlackEventManager {
                 MethodsClient client = ctx.client();
                     files.forEach(file -> {
                         try {
-                            catalogManager.updateCatalogInternal(user, client, file, createUsergroupsUsersListRequest());
+                            catalogManager.updateCatalogInternal(user, client, file, SlackManagerUtils.createUsergroupsUsersListRequest(botToken));
                         } catch (IOException e) {
                             logger.info("io-problem while updating catalog");
                         } catch (SlackApiException e) {
