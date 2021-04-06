@@ -6,7 +6,6 @@ import com.slack.api.methods.request.usergroups.users.UsergroupsUsersListRequest
 import com.slack.api.methods.response.files.FilesUploadResponse;
 import com.slack.api.methods.response.usergroups.users.UsergroupsUsersListResponse;
 import dramabot.service.model.CatalogEntryBean;
-import dramabot.slack.SlackApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +21,10 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static dramabot.slack.SlackApp.*;
 
 public enum SlackManagerUtils {
     ;
@@ -45,7 +47,7 @@ public enum SlackManagerUtils {
             // if null don't post in channel but private
             responseType = "ephemeral";
             resultBuilder.append(
-                    SlackApp.ERROR_TEXT);
+                    ERROR_TEXT);
 
         }
         return responseType;
@@ -58,11 +60,11 @@ public enum SlackManagerUtils {
         List<CatalogEntryBean> everythingElseBeans = new ArrayList<>();
         List<CatalogEntryBean> allBeans = catalogManager.getBeansFromDatabase();
         for (CatalogEntryBean catalogEntryBean : allBeans) {
-            if (null != catalogEntryBean.getType() && catalogEntryBean.getType().trim().equals(SlackApp.E_SE)) {
+            if (null != catalogEntryBean.getType() && catalogEntryBean.getType().trim().equals(E_SE)) {
                 eseBeans.add(catalogEntryBean);
-            } else if (null != catalogEntryBean.getType() && catalogEntryBean.getType().trim().equals(SlackApp.CRITICA)) {
+            } else if (null != catalogEntryBean.getType() && catalogEntryBean.getType().trim().equals(CRITICA)) {
                 criticaBeans.add(catalogEntryBean);
-            } else if (null != catalogEntryBean.getType() && catalogEntryBean.getType().trim().equals(SlackApp.FEEDBACK)) {
+            } else if (null != catalogEntryBean.getType() && catalogEntryBean.getType().trim().equals(FEEDBACK)) {
                 feedbackBeans.add(catalogEntryBean);
             } else {
                 everythingElseBeans.add(catalogEntryBean);
@@ -70,10 +72,10 @@ public enum SlackManagerUtils {
             fillAuthorMap(authors, catalogEntryBean);
         }
         Map<String, List<CatalogEntryBean>> result = new HashMap<>();
-        result.put(SlackApp.E_SE, eseBeans);
-        result.put(SlackApp.CRITICA, criticaBeans);
-        result.put(SlackApp.FEEDBACK, feedbackBeans);
-        result.put(SlackApp.EVERYTHING_ELSE, everythingElseBeans);
+        result.put(E_SE, eseBeans);
+        result.put(CRITICA, criticaBeans);
+        result.put(FEEDBACK, feedbackBeans);
+        result.put(EVERYTHING_ELSE, everythingElseBeans);
         return result;
     }
 
@@ -101,17 +103,17 @@ public enum SlackManagerUtils {
         authorTranslations.put("dipauli", new String[]{"Alessandro", "Pauli", "dipi"});
         String[] allAuthors = authorTranslations.values().stream().flatMap(Arrays::stream).toArray(String[]::new);
 
-        String[] feedbackKeywords = {SlackApp.FEEDBACK, "vorrei", " pens", "pens", "secondo te"};
+        String[] feedbackKeywords = {FEEDBACK, "vorrei", " pens", "pens", "secondo te"};
         String[] criticKeywords = {"domanda", "critic", " devo ", " devi ", "devo ", "devi "};
         String[] eseKeywords = {"capisc", "dubbi", "spiega", "caga", "aiut", "dire", "dici", "dimmi"};
         String[] keywordsMeToo = {"ador", " amo", "amo"};
 
         String[] helpCommands = {"theyellow", "il tedesco", "help", "bee", "stupid", "merda"};
 
-        List<CatalogEntryBean> eseBeans = allBeans.get(SlackApp.E_SE);
-        List<CatalogEntryBean> criticaBeans = allBeans.get(SlackApp.CRITICA);
-        List<CatalogEntryBean> feedbackBeans = allBeans.get(SlackApp.FEEDBACK);
-        List<CatalogEntryBean> everythingElseBeans = allBeans.get(SlackApp.EVERYTHING_ELSE);
+        List<CatalogEntryBean> eseBeans = allBeans.get(E_SE);
+        List<CatalogEntryBean> criticaBeans = allBeans.get(CRITICA);
+        List<CatalogEntryBean> feedbackBeans = allBeans.get(FEEDBACK);
+        List<CatalogEntryBean> everythingElseBeans = allBeans.get(EVERYTHING_ELSE);
         logger.debug("beans categorized for random reply");
         String something = "qualcosa";
         if (containsOne(payloadText, feedbackKeywords)) {
@@ -132,18 +134,21 @@ public enum SlackManagerUtils {
         else {
             // if not found don't post in channel but private
             responseType = "ephemeral";
-            resultBuilder.append(SlackApp.ERROR_TEXT);
+            logger.debug("found no corresponding keyword in payloadText");
+            resultBuilder.append(ERROR_TEXT);
         }
         logger.debug("appended text to resultBuilder, response type would be {}", responseType);
         return responseType;
     }
 
     private static void appendCommands(StringBuilder resultBuilder, String[] feedbackKeywords, String[] criticKeywords, String[] eseKeywords, String[] keywordsMeToo) {
+        logger.debug("append commands to ");
         resultBuilder.append("\nComandi possibili: ");
-        Arrays.stream(feedbackKeywords).forEach(x -> resultBuilder.append(SlackApp.TICK_IN).append(x).append(SlackApp.TICK_OUT));
-        Arrays.stream(criticKeywords).forEach(x -> resultBuilder.append(SlackApp.TICK_IN).append(x).append(SlackApp.TICK_OUT));
-        Arrays.stream(eseKeywords).forEach(x -> resultBuilder.append(SlackApp.TICK_IN).append(x).append(SlackApp.TICK_OUT));
-        Arrays.stream(keywordsMeToo).forEach(x -> resultBuilder.append(SlackApp.TICK_IN).append(x).append(SlackApp.TICK_OUT));
+        Consumer<String> stringTicksAround = x -> resultBuilder.append(TICK_IN).append(x).append(TICK_OUT);
+        Arrays.stream(feedbackKeywords).forEach(stringTicksAround);
+        Arrays.stream(criticKeywords).forEach(stringTicksAround);
+        Arrays.stream(eseKeywords).forEach(stringTicksAround);
+        Arrays.stream(keywordsMeToo).forEach(stringTicksAround);
     }
 
     private static boolean containsOne(String payloadText, String... keywords) {
@@ -168,11 +173,14 @@ public enum SlackManagerUtils {
     }
 
     private static List<CatalogEntryBean> getBeansForAuthor(Map<String, ? extends List<CatalogEntryBean>> authorsMap, Map<String, String[]> authorTranslations, String payloadText) {
-        return authorsMap.entrySet()
+        logger.debug("try to get beans for author");
+        List<CatalogEntryBean> beans = authorsMap.entrySet()
                 .stream().filter(
                         x -> !x.getKey().trim().isEmpty() && containsOne(payloadText, authorTranslations.get(x.getKey())))
                 .map(Map.Entry::getValue).flatMap(List::stream)
                 .collect(Collectors.toList());
+        logger.debug("found {} author beans for the payload", beans.size());
+        return beans;
     }
 
     public static void doCatalogCsvResponse(AsyncMethodsClient client, String user, String channelId, String botToken) throws IOException, SlackApiException, InterruptedException {
