@@ -94,6 +94,7 @@ public enum SlackManagerUtils {
 
 
     private static String getResponseTypeAndAppend(Map<String, ? extends List<CatalogEntryBean>> authorsMap, Map<String, ? extends List<CatalogEntryBean>> allBeans, String payloadText, StringBuilder resultBuilder, String responseType) {
+        logger.debug("create text for reply ");
         Map<String, String[]> authorTranslations = new HashMap<>();
         authorTranslations.put("gubiani", new String[]{"Anna", "Gubiani", "anute"});
         authorTranslations.put("tollis", new String[]{"Giulia", "Tollis"});

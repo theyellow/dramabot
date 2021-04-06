@@ -3,6 +3,7 @@ package dramabot.service;
 import com.slack.api.Slack;
 import com.slack.api.app_backend.slash_commands.payload.SlashCommandPayload;
 import com.slack.api.bolt.handler.builtin.SlashCommandHandler;
+import com.slack.api.bolt.response.Response;
 import com.slack.api.methods.AsyncMethodsClient;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 
 @Service
@@ -37,8 +39,9 @@ public class SlackCommandManager {
 
     public SlashCommandHandler dramabotCommandHandler() {
         return (req, ctx) -> {
+            Response ack = ctx.ack();
             executorService.execute(() -> createAsyncDramabotResponse(req));
-            return ctx.ack();
+            return ack;
         };
     }
 
@@ -69,7 +72,7 @@ public class SlackCommandManager {
             SlackManagerUtils.appendPayload(authors, allBeans, payloadText,
                     resultBuilder, responseType);
             String text = resultBuilder.toString();
-            logger.debug("answer is: {}", text);
+            logger.debug("answer is: {} ; now starting chatPostMessageRequest", text);
             String iconEmoji = payloadText.contains(" amo") ? ":heart:" : null;
             ChatPostMessageRequest asyncRequest = ChatPostMessageRequest.builder().text(text).channel(channelId)
                     .iconEmoji(iconEmoji).token(botToken).build();
@@ -83,6 +86,7 @@ public class SlackCommandManager {
                 Thread.currentThread().interrupt();
             }
         }
+        logger.debug("");
     }
 
 }
