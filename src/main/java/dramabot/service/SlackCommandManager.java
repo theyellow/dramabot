@@ -7,6 +7,7 @@ import com.slack.api.bolt.response.Response;
 import com.slack.api.methods.AsyncMethodsClient;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import com.slack.api.methods.response.chat.ChatPostMessageResponse;
 import dramabot.service.model.CatalogEntryBean;
 import dramabot.slack.SlackApp;
 import org.slf4j.Logger;
@@ -19,8 +20,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 
 @Service
@@ -40,12 +42,21 @@ public class SlackCommandManager {
     public SlashCommandHandler dramabotCommandHandler() {
         return (req, ctx) -> {
             Response ack = ctx.ack();
-            executorService.execute(() -> createAsyncDramabotResponse(req));
+            executorService.execute(() -> {
+                try {
+                    createAsyncDramabotResponse(req);
+                } catch (ExecutionException e) {
+                    logger.warn("problem with asynchronous dramabot response", e);
+                } catch (InterruptedException e) {
+                    logger.warn("problem with asynchronous dramabot response: {}", e.getMessage());
+                    Thread.currentThread().interrupt();
+                }
+            });
             return ack;
         };
     }
 
-    private void createAsyncDramabotResponse(com.slack.api.bolt.request.builtin.SlashCommandRequest req) {
+    private void createAsyncDramabotResponse(com.slack.api.bolt.request.builtin.SlashCommandRequest req) throws ExecutionException, InterruptedException {
         Slack slack = Slack.getInstance();
         AsyncMethodsClient client = slack.methodsAsync(botToken);
         Map<String, List<CatalogEntryBean>> authors = new HashMap<>();
@@ -71,12 +82,15 @@ public class SlackCommandManager {
         if (!payloadText.contains("catalogo")) {
             SlackManagerUtils.appendPayload(authors, allBeans, payloadText,
                     resultBuilder, responseType);
+            logger.debug("starting StringBuilder.toString() for answer");
             String text = resultBuilder.toString();
             logger.debug("answer is: {} ; now starting chatPostMessageRequest", text);
             String iconEmoji = payloadText.contains(" amo") ? ":heart:" : null;
             ChatPostMessageRequest asyncRequest = ChatPostMessageRequest.builder().text(text).channel(channelId)
                     .iconEmoji(iconEmoji).token(botToken).build();
-            client.chatPostMessage(asyncRequest);
+            CompletableFuture<ChatPostMessageResponse> postMessageResponseCompletableFuture = client.chatPostMessage(asyncRequest);
+            ChatPostMessageResponse chatPostMessageResponse = postMessageResponseCompletableFuture.get();
+            logger.debug("async reply with text was send - result was {}", chatPostMessageResponse.isOk() ? "ok" : chatPostMessageResponse.getErrors());
         } else {
             try {
                 SlackManagerUtils.doCatalogCsvResponse(client, userId, channelId, botToken);

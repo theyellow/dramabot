@@ -1,6 +1,5 @@
 package dramabot.service;
 
-import com.slack.api.Slack;
 import com.slack.api.methods.AsyncMethodsClient;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.usergroups.users.UsergroupsUsersListRequest;
@@ -135,6 +134,7 @@ public enum SlackManagerUtils {
             responseType = "ephemeral";
             resultBuilder.append(SlackApp.ERROR_TEXT);
         }
+        logger.debug("appended text to result (StringBuilder), response type would be {}", responseType);
         return responseType;
     }
 
