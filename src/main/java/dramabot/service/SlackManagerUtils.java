@@ -112,7 +112,7 @@ public enum SlackManagerUtils {
         List<CatalogEntryBean> criticaBeans = allBeans.get(SlackApp.CRITICA);
         List<CatalogEntryBean> feedbackBeans = allBeans.get(SlackApp.FEEDBACK);
         List<CatalogEntryBean> everythingElseBeans = allBeans.get(SlackApp.EVERYTHING_ELSE);
-
+        logger.debug("beans categorized for random reply");
         String something = "qualcosa";
         if (containsOne(payloadText, feedbackKeywords)) {
             appendRandomText(feedbackBeans, resultBuilder);
@@ -134,7 +134,7 @@ public enum SlackManagerUtils {
             responseType = "ephemeral";
             resultBuilder.append(SlackApp.ERROR_TEXT);
         }
-        logger.debug("appended text to result (StringBuilder), response type would be {}", responseType);
+        logger.debug("appended text to resultBuilder, response type would be {}", responseType);
         return responseType;
     }
 
@@ -151,13 +151,19 @@ public enum SlackManagerUtils {
         if (null != keywords) {
             count = Arrays.stream(keywords).map(x -> x.toLowerCase(Locale.ROOT)).filter(payloadText.toLowerCase(Locale.ROOT)::contains).count();
         }
-        return 0 != count;
+        boolean containsOne = 0 != count;
+        if (containsOne) {
+            logger.debug("payload contains at least one of the keywords");
+        }
+        return containsOne;
     }
 
     private static void appendRandomText(List<? extends CatalogEntryBean> feedbackBeans, StringBuilder resultBuilder) {
         int size = feedbackBeans.size();
         if (0 < size) {
-            resultBuilder.append(feedbackBeans.get(secureRandom.nextInt(size)).getText());
+            String text = feedbackBeans.get(secureRandom.nextInt(size)).getText();
+            logger.debug("append {} to resultBuilder", text);
+            resultBuilder.append(text);
         }
     }
 

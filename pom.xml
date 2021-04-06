@@ -11,7 +11,7 @@
 	</parent>
 
 	<name>Dramabot for Matearium</name>
-	<description>A Slack/Facebook drama for playwriting bot using slack-bolt-api.</description>
+	<description>A Slack-App for playwriting bot using slack-bolt-api.</description>
 
 	<artifactId>dramabot</artifactId>
 	<groupId>io.github.theyellow</groupId>
