@@ -6,6 +6,7 @@ import com.slack.api.methods.request.usergroups.users.UsergroupsUsersListRequest
 import com.slack.api.methods.response.files.FilesUploadResponse;
 import com.slack.api.methods.response.usergroups.users.UsergroupsUsersListResponse;
 import dramabot.service.model.CatalogEntryBean;
+import dramabot.slack.SlackApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,29 +29,48 @@ import static dramabot.slack.SlackApp.*;
 
 public enum SlackManagerUtils {
     ;
-
     private static SecureRandom secureRandom;
 
     private static final Logger logger = LoggerFactory.getLogger(SlackCommandManager.class);
 
+    static {
+        try {
+            secureRandom = SecureRandom.getInstanceStrong();
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("Error getting SecureRandom while initializing in SlackManagerUtils: {}", e.getMessage());
+        }
+    }
+
+
     public static String appendPayload(Map<String, ? extends List<CatalogEntryBean>> authors, Map<String, ? extends List<CatalogEntryBean>> allBeans, String payloadText,
-                                       StringBuilder resultBuilder, String responseType) {
+                                       StringBuilder resultBuilder) {
+        String responseType;
         if (null != payloadText) {
-            try {
-                secureRandom = SecureRandom.getInstanceStrong();
-            } catch (NoSuchAlgorithmException e) {
-                logger.error("Error getting SecureRandom: {}", e.getMessage());
-                return responseType;
+            String errorResponseType = ensureSecureRandomIsExisting();
+            if (null != errorResponseType) {
+                return errorResponseType;
             }
-            responseType = getResponseTypeAndAppend(authors, allBeans, payloadText, resultBuilder, responseType);
+            responseType = getResponseTypeAndAppend(authors, allBeans, payloadText, resultBuilder);
         } else {
             // if null don't post in channel but private
-            responseType = "ephemeral";
+            responseType = EPHEMERAL;
             resultBuilder.append(
                     ERROR_TEXT);
 
         }
         return responseType;
+    }
+
+    private static String ensureSecureRandomIsExisting() {
+        if (null == secureRandom) {
+            try {
+                secureRandom = SecureRandom.getInstanceStrong();
+            } catch (NoSuchAlgorithmException e) {
+                logger.error("Error creating SecureRandom via 'ensureSecureRandomIsExisting': {}", e.getMessage());
+                return IN_CHANNEL;
+            }
+        }
+        return null;
     }
 
     public static Map<String, List<CatalogEntryBean>> fillAuthorsAndReturnAllBeansWithDatabaseContent(Map<? super String, List<CatalogEntryBean>> authors, CatalogManager catalogManager) {
@@ -94,7 +114,8 @@ public enum SlackManagerUtils {
     }
 
 
-    private static String getResponseTypeAndAppend(Map<String, ? extends List<CatalogEntryBean>> authorsMap, Map<String, ? extends List<CatalogEntryBean>> allBeans, String payloadText, StringBuilder resultBuilder, String responseType) {
+    private static String getResponseTypeAndAppend(Map<String, ? extends List<CatalogEntryBean>> authorsMap, Map<String, ? extends List<CatalogEntryBean>> allBeans, String payloadText, StringBuilder resultBuilder) {
+        String responseType = IN_CHANNEL;
         logger.debug("create text for reply ");
         Map<String, String[]> authorTranslations = new HashMap<>();
         authorTranslations.put("gubiani", new String[]{"Anna", "Gubiani", "anute"});
@@ -121,7 +142,8 @@ public enum SlackManagerUtils {
         } else if (containsOne(payloadText, criticKeywords)) {
             appendRandomText(criticaBeans, resultBuilder);
         } else if (containsOne(payloadText, allAuthors)) {
-            appendRandomText(getBeansForAuthor(authorsMap, authorTranslations, payloadText), resultBuilder);
+            List<CatalogEntryBean> beansForAuthor = getBeansForAuthor(authorsMap, authorTranslations, payloadText);
+            appendRandomText(beansForAuthor, resultBuilder);
         } else if (containsOne(payloadText, eseKeywords)) {
             appendRandomText(eseBeans, resultBuilder);
         } else if (containsOne(payloadText, something)) {
@@ -133,7 +155,7 @@ public enum SlackManagerUtils {
         }
         else {
             // if not found don't post in channel but private
-            responseType = "ephemeral";
+            responseType = SlackApp.EPHEMERAL;
             logger.debug("found no corresponding keyword in payloadText");
             resultBuilder.append(ERROR_TEXT);
         }
@@ -166,7 +188,9 @@ public enum SlackManagerUtils {
     private static void appendRandomText(List<? extends CatalogEntryBean> feedbackBeans, StringBuilder resultBuilder) {
         int size = feedbackBeans.size();
         if (0 < size) {
-            String text = feedbackBeans.get(secureRandom.nextInt(size)).getText();
+            int index = secureRandom.nextInt(size);
+            logger.debug("take bean {} of {}", index, size);
+            String text = feedbackBeans.get(index).getText();
             logger.debug("append {} to resultBuilder", text);
             resultBuilder.append(text);
         }

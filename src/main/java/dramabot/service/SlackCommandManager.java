@@ -9,7 +9,6 @@ import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.response.chat.ChatPostMessageResponse;
 import dramabot.service.model.CatalogEntryBean;
-import dramabot.slack.SlackApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -75,13 +75,14 @@ public class SlackCommandManager {
         StringBuilder resultBuilder = new StringBuilder();
 
         // default response in channel
-        String responseType = SlackApp.IN_CHANNEL;
+
 
         logger.debug("In channel {} '{}' " + "was sent by {}. The text was '{}', with UserId: {} ChannelId:{}",
                 channelName, command, userName, payloadText, userId, channelId);
-        if (!payloadText.contains("catalogo")) {
-            SlackManagerUtils.appendPayload(authors, allBeans, payloadText,
-                    resultBuilder, responseType);
+        if (!payloadText.toLowerCase(Locale.ROOT).contains("catalogo")) {
+            String responseType = SlackManagerUtils.appendPayload(authors, allBeans, payloadText,
+                    resultBuilder);
+            logger.debug("the responseType of 'catalogo' should be {}, but we can just send a ChatPostMessageRequest to channel", responseType);
             logger.debug("starting StringBuilder.toString() for answer");
             String text = resultBuilder.toString();
             logger.debug("answer is: {} ; now starting chatPostMessageRequest", text);

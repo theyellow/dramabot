@@ -24,6 +24,7 @@ public class SlackApp {
 
     public static final String ERROR_TEXT = "Orpo, ce vustu? Hai bisogno di un feedback? O vuoi che ti faccia una bella domanda critica? Qualsiasi cosa ti crucci, chiedimi!";
     public static final String IN_CHANNEL = "in_channel";
+    public static final String EPHEMERAL = "ephemeral";
     private static final Logger logger = LoggerFactory.getLogger(SlackApp.class);
     public static final String E_SE = "e se";
     public static final String CRITICA = "critica";

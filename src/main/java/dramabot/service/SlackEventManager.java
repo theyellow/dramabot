@@ -16,7 +16,6 @@ import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.event.*;
 import com.slack.api.model.view.View;
 import dramabot.service.model.CatalogEntryBean;
-import dramabot.slack.SlackApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +24,16 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.slack.api.model.block.Blocks.*;
 import static com.slack.api.model.block.composition.BlockCompositions.markdownText;
 import static com.slack.api.model.view.Views.view;
+import static dramabot.slack.SlackApp.IN_CHANNEL;
 
 @Service
 public class SlackEventManager {
@@ -49,17 +52,16 @@ public class SlackEventManager {
             String payloadText = event.getText();
             String username = event.getUsername();
             username = null == username ? "" : username;
+            logger.debug("{} mentioned dramabot: {}", username, payloadText);
             StringBuilder resultBuilder = new StringBuilder();
             // default response in channel
-            String responseType = SlackApp.IN_CHANNEL;
-            responseType = SlackManagerUtils.appendPayload(authors, allBeans, payloadText,
-                    resultBuilder, responseType);
+            String responseType = SlackManagerUtils.appendPayload(authors, allBeans, payloadText,
+                    resultBuilder);
             // egg 1
             String iconEmoji = payloadText.contains(" amo") ? ":heart:" : null;
-            logger.debug("{} mentioned dramabot: {}", username, payloadText);
             String text = resultBuilder.toString();
 
-            if (!SlackApp.IN_CHANNEL.equals(responseType)) {
+            if (!IN_CHANNEL.equals(responseType)) {
                 logger.info("Normally a chatmessage would be posted personally, but in channels with @ - mentioning it's public");
             }
             ChatPostMessageRequest reqq = ChatPostMessageRequest.builder().text(text).channel(event.getChannel())
