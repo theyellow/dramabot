@@ -187,11 +187,13 @@ public enum SlackManagerUtils {
 
     private static void appendRandomText(List<? extends CatalogEntryBean> feedbackBeans, StringBuilder resultBuilder) {
         int size = feedbackBeans.size();
+        logger.debug("append one of {} beans", size);
         if (0 < size) {
             int index = secureRandom.nextInt(size);
-            logger.debug("take bean {} of {}", index, size);
-            String text = feedbackBeans.get(index).getText();
-            logger.debug("append {} to resultBuilder", text);
+            logger.debug("take bean {}", index);
+            CatalogEntryBean catalogEntryBean = feedbackBeans.get(index);
+            String text = catalogEntryBean.getText();
+            logger.debug("append {} to resultBuilder, type was {}", text, catalogEntryBean.getType());
             resultBuilder.append(text);
         }
     }
