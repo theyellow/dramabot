@@ -16,7 +16,6 @@ import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -29,27 +28,15 @@ import static dramabot.slack.SlackApp.*;
 
 public enum SlackManagerUtils {
     ;
-    private static SecureRandom secureRandom;
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     private static final Logger logger = LoggerFactory.getLogger(SlackCommandManager.class);
-
-    static {
-        try {
-            secureRandom = SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException e) {
-            logger.error("Error getting SecureRandom while initializing in SlackManagerUtils: {}", e.getMessage());
-        }
-    }
 
 
     public static String appendPayload(Map<String, ? extends List<CatalogEntryBean>> authors, Map<String, ? extends List<CatalogEntryBean>> allBeans, String payloadText,
                                        StringBuilder resultBuilder) {
         String responseType;
         if (null != payloadText) {
-            String errorResponseType = ensureSecureRandomIsExisting();
-            if (null != errorResponseType) {
-                return errorResponseType;
-            }
             responseType = getResponseTypeAndAppend(authors, allBeans, payloadText, resultBuilder);
         } else {
             // if null don't post in channel but private
@@ -59,18 +46,6 @@ public enum SlackManagerUtils {
 
         }
         return responseType;
-    }
-
-    private static String ensureSecureRandomIsExisting() {
-        if (null == secureRandom) {
-            try {
-                secureRandom = SecureRandom.getInstanceStrong();
-            } catch (NoSuchAlgorithmException e) {
-                logger.error("Error creating SecureRandom via 'ensureSecureRandomIsExisting': {}", e.getMessage());
-                return IN_CHANNEL;
-            }
-        }
-        return null;
     }
 
     public static Map<String, List<CatalogEntryBean>> fillAuthorsAndReturnAllBeansWithDatabaseContent(Map<? super String, List<CatalogEntryBean>> authors, CatalogManager catalogManager) {
