@@ -102,8 +102,8 @@ public class SlackEventManager {
         String retryReason = ctx.getRetryReason();
         logger.info("{}-message event in channel '{}' (ctx): {} request user token (ctx): {} ; bot was (ctx): {} botuser: {}; there were {} retries ; the text was: {}",
                 eventType, channel, channelId, requestUserToken, botId, botUserId, num, text);
-        if (0 < num) {
-            logger.warn("reason for retry: {}", retryReason);
+        if (null != num && 0 < num) {
+            logger.warn("reason for retry: {}", null != retryReason ? retryReason : "i don't know... :(");
         }
         return ctx.ack();
     }
