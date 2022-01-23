@@ -20,8 +20,8 @@
 *.rar
 
 # catalog.csv get's populated by magic (from ./config.csv) or direct import via bot
-config/catalog.csv
-/catalog.csv
+#config/catalog.csv
+#/catalog.csv
 
 # slack-settings are excluded for security-reasons
 config/slack-settings.properties
