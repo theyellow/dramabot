@@ -7,11 +7,9 @@ import dramabot.service.SlackCommandManager;
 import dramabot.service.SlackEventManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.web.client.RestTemplate;
 
@@ -19,7 +17,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Configuration
-@PropertySource({"file:config/slack-settings.properties"})
 public class SlackApp {
 
     public static final String ERROR_TEXT = "Orpo, ce vustu? Hai bisogno di un feedback? O vuoi che ti faccia una bella domanda critica? Qualsiasi cosa ti crucci, chiedimi!";
@@ -33,23 +30,14 @@ public class SlackApp {
     public static final String TICK_OUT = "'";
     public static final String TICK_IN = " '";
 
-    @Value(value = "${slack.botToken}")
-    private String botToken;
-
-    @Value(value = "${slack.signingSecret}")
-    private String signingSecret;
-
-    @Value(value = "${slack.clientSecret}")
-    private String clientSecret;
-
     @Bean
     public App dramabotApp(SlackCommandManager commandManager, SlackEventManager eventManager) {
         AppConfig appConfig = AppConfig.builder().
                 /*clientId(clientId).
                 requestVerificationEnabled(false).*/
-                        clientSecret(clientSecret).
-                        signingSecret(signingSecret).
-                        singleTeamBotToken(botToken).build();
+                        clientSecret(System.getenv("SLACK_CLIENT_SECRET")).
+                        signingSecret(System.getenv("SLACK_SIGNING_SECRET")).
+                        singleTeamBotToken(System.getenv("SLACK_BOT_TOKEN")).build();
         App app = new App(appConfig);
         app.event(AppMentionEvent.class, eventManager.mentionEventHandler());
         app.command("/dramabot", commandManager.dramabotCommandHandler());
@@ -66,7 +54,7 @@ public class SlackApp {
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         ClientHttpRequestInterceptor interceptor = (request, body, execution) -> {
-            request.getHeaders().add("Authorization", "Bearer " + botToken);
+            request.getHeaders().add("Authorization", "Bearer " + System.getenv("SLACK_BOT_TOKEN"));
             return execution.execute(request, body);
         };
         return builder.interceptors(interceptor).build();

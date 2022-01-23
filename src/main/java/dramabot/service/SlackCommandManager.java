@@ -12,7 +12,6 @@ import dramabot.service.model.CatalogEntryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -36,9 +35,6 @@ public class SlackCommandManager {
     @Autowired
     public ExecutorService executorService;
 
-    @Value(value = "${slack.botToken}")
-    private String botToken;
-
     public SlashCommandHandler dramabotCommandHandler() {
         return (req, ctx) -> {
             Response ack = ctx.ack();
@@ -58,7 +54,7 @@ public class SlackCommandManager {
 
     private void createAsyncDramabotResponse(com.slack.api.bolt.request.builtin.SlashCommandRequest req) throws ExecutionException, InterruptedException {
         Slack slack = Slack.getInstance();
-        AsyncMethodsClient client = slack.methodsAsync(botToken);
+        AsyncMethodsClient client = slack.methodsAsync(System.getenv("SLACK_BOT_TOKEN"));
         Map<String, List<CatalogEntryBean>> authors = new HashMap<>();
         Map<String, List<CatalogEntryBean>> allBeans = SlackManagerUtils.fillAuthorsAndReturnAllBeansWithDatabaseContent(authors, catalogManager);
         SlashCommandPayload payload = req.getPayload();
@@ -88,13 +84,13 @@ public class SlackCommandManager {
             logger.debug("answer is: {} ; now starting chatPostMessageRequest", text);
             String iconEmoji = payloadText.contains(" amo") ? ":heart:" : null;
             ChatPostMessageRequest asyncRequest = ChatPostMessageRequest.builder().text(text).channel(channelId)
-                    .iconEmoji(iconEmoji).token(botToken).build();
+                    .iconEmoji(iconEmoji).token(System.getenv("SLACK_BOT_TOKEN")).build();
             CompletableFuture<ChatPostMessageResponse> postMessageResponseCompletableFuture = client.chatPostMessage(asyncRequest);
             ChatPostMessageResponse chatPostMessageResponse = postMessageResponseCompletableFuture.get();
             logger.debug("async reply with text was send - result was {}", chatPostMessageResponse.isOk() ? "ok" : chatPostMessageResponse.getErrors());
         } else {
             try {
-                SlackManagerUtils.doCatalogCsvResponse(client, userId, channelId, botToken);
+                SlackManagerUtils.doCatalogCsvResponse(client, userId, channelId, System.getenv("SLACK_BOT_TOKEN"));
             } catch (IOException | SlackApiException e) {
                 logger.debug("Error in /dramabot - command while searching for catalog", e);
             } catch (InterruptedException e) {

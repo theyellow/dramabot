@@ -19,7 +19,6 @@ import dramabot.service.model.CatalogEntryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -39,8 +38,7 @@ import static dramabot.slack.SlackApp.IN_CHANNEL;
 public class SlackEventManager {
 
     private static final Logger logger = LoggerFactory.getLogger(SlackEventManager.class);
-    @Value(value = "${slack.botToken}")
-    private String botToken;
+
     @Autowired
     private CatalogManager catalogManager;
 
@@ -65,12 +63,12 @@ public class SlackEventManager {
                 logger.info("Normally a chatmessage would be posted personally, but in channels with @ - mentioning it's public");
             }
             ChatPostMessageRequest reqq = ChatPostMessageRequest.builder().text(text).channel(event.getChannel())
-                    .iconEmoji(iconEmoji).token(botToken).build();
+                    .iconEmoji(iconEmoji).token(System.getenv("SLACK_BOT_TOKEN")).build();
             ctx.asyncClient().chatPostMessage(reqq);
 
             if (payloadText.contains("catalogo")) {
                 try {
-                    SlackManagerUtils.doCatalogCsvResponse(ctx.asyncClient(), event.getUser(), event.getChannel(), botToken);
+                    SlackManagerUtils.doCatalogCsvResponse(ctx.asyncClient(), event.getUser(), event.getChannel(), System.getenv("SLACK_BOT_TOKEN"));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -140,7 +138,7 @@ public class SlackEventManager {
     }
 
     private FilesInfoRequest createFilesInfoRequest(FileSharedEvent.File file) {
-        return FilesInfoRequest.builder().token(botToken).file(file.getId()).build();
+        return FilesInfoRequest.builder().token(System.getenv("SLACK_BOT_TOKEN")).file(file.getId()).build();
     }
 
     public BoltEventHandler<MessageFileShareEvent> getMessageSharedFile() {
@@ -169,7 +167,7 @@ public class SlackEventManager {
                 MethodsClient client = ctx.client();
                     files.forEach(file -> {
                         try {
-                            catalogManager.updateCatalogInternal(user, client, file, SlackManagerUtils.createUsergroupsUsersListRequest(botToken));
+                            catalogManager.updateCatalogInternal(user, client, file, SlackManagerUtils.createUsergroupsUsersListRequest(System.getenv("SLACK_BOT_TOKEN")));
                         } catch (IOException e) {
                             logger.info("io-problem while updating catalog");
                         } catch (SlackApiException e) {
