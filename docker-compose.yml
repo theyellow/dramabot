@@ -7,8 +7,6 @@ services:
       - TZ=Europe/Berlin
     build: 
       context: ./
-      args:
-        - JAR_FILE=dramabot-0.0.1-SNAPSHOT-exec.jar
     ports:
 # format: "port-on-docker-host:port-in-docker-container"
 # webhook port
