@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: drama-bot
+spec:
+  containers:
+    - name: dramabotcontainer
+      image: ghcr.io/theyellow/dramabot:main
+      envFrom:
+        - secretRef:
+            name: dramabot-secrets
+      ports:
+        - containerPort: 18081
+      command: [ "java", "-Xmx300m", "-jar", "/dramabot.jar" ]

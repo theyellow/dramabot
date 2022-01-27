@@ -12,4 +12,4 @@ ENTRYPOINT ["java", \
 "-Xmx300m", \
 "-jar", \
 "/dramabot.jar"]
-EXPOSE 8081
+EXPOSE 18081
