@@ -59,7 +59,7 @@ public class CatalogManager {
     @Autowired
     private RestTemplate restTemplate;
 
-    public List<String[]> readAll(Reader reader) throws IOException {
+    public List<String[]> readAll(Reader reader) throws IOException, CsvException {
         CSVParser parser = new CSVParserBuilder().withSeparator(';').withIgnoreQuotations(true).build();
         CSVReader csvReader = new CSVReaderBuilder(reader).withSkipLines(0).withCSVParser(parser).build();
         List<String[]> list = csvReader.readAll();
@@ -68,12 +68,12 @@ public class CatalogManager {
         return list;
     }
 
-    public List<String[]> readFile(String file) throws IOException, URISyntaxException {
+    public List<String[]> readFile(String file) throws IOException, URISyntaxException, CsvException {
         Reader reader = Files.newBufferedReader(Paths.get(ClassLoader.getSystemResource(file).toURI()));
         return readAll(reader);
     }
 
-    public List<String[]> readCatalog() throws IOException, URISyntaxException {
+    public List<String[]> readCatalog() throws IOException, URISyntaxException, CsvException {
         return readFile(CONFIG_FILE_NAME);
     }
 
